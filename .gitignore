@@ -3,7 +3,6 @@ backend/.env
 backend/logs
 backend/tmp
 backend/bin
-backend/gen/go
 
 # Frontend
 frontend/node_modules
@@ -11,7 +10,6 @@ frontend/dist
 frontend/.env
 frontend/.env.local
 frontend/.env.production
-frontend/src/proto
 
 # IDEs
 .vscode
