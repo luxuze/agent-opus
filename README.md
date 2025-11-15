@@ -16,12 +16,14 @@ Agent 平台是一个面向企业和开发者的智能代理管理系统，提�
 ## 技术栈
 
 ### 后端
+
 - **语言**: Go 1.21+
 - **框架**: Gin
 - **ORM**: ent
 - **数据库**: MySQL 8.0 + MongoDB 6 + Redis 7
 
 ### 前端
+
 - **框架**: React 18
 - **构建工具**: Vite
 - **UI 库**: Ant Design 5
@@ -29,6 +31,7 @@ Agent 平台是一个面向企业和开发者的智能代理管理系统，提�
 - **路由**: React Router v6
 
 ### 基础设施
+
 - **容器化**: Docker + Docker Compose
 - **反向代理**: Nginx
 
@@ -77,30 +80,35 @@ agent-opus/
 ### 使用 Docker Compose 启动
 
 1. **克隆项目**
+
 ```bash
 cd /Users/xuzelu/workspace/agent-opus
 ```
 
 2. **配置环境变量**
+
 ```bash
 cp backend/.env.example backend/.env
 # 编辑 backend/.env 配置必要的环境变量
 ```
 
 3. **启动所有服务**
+
 ```bash
 docker-compose up -d
 ```
 
 4. **查看服务状态**
+
 ```bash
 docker-compose ps
 ```
 
 5. **访问应用**
+
 - 前端: http://localhost:3000
-- 后端API: http://localhost:8080
-- API 文档: http://localhost:8080/api/v1/ping
+- 后端 API: http://localhost:8000
+- API 文档: http://localhost:8000/api/v1/ping
 
 ### 本地开发
 
@@ -208,17 +216,17 @@ POST /api/v1/knowledge-bases/{id}/documents
 
 ### 后端环境变量
 
-| 变量名 | 说明 | 默认值 |
-|--------|------|--------|
-| SERVER_PORT | 服务端口 | 8080 |
-| SERVER_MODE | 运行模式 (debug/release) | debug |
-| MYSQL_HOST | MySQL 主机 | localhost |
-| MYSQL_PORT | MySQL 端口 | 3306 |
-| MYSQL_DATABASE | 数据库名 | agent_platform |
-| MONGODB_URI | MongoDB 连接字符串 | mongodb://localhost:27017 |
-| REDIS_HOST | Redis 主机 | localhost |
-| JWT_SECRET | JWT 密钥 | your-secret-key |
-| OPENAI_API_KEY | OpenAI API Key | - |
+| 变量名         | 说明                     | 默认值                    |
+| -------------- | ------------------------ | ------------------------- |
+| SERVER_PORT    | 服务端口                 | 8000                      |
+| SERVER_MODE    | 运行模式 (debug/release) | debug                     |
+| MYSQL_HOST     | MySQL 主机               | localhost                 |
+| MYSQL_PORT     | MySQL 端口               | 3306                      |
+| MYSQL_DATABASE | 数据库名                 | agent_platform            |
+| MONGODB_URI    | MongoDB 连接字符串       | mongodb://localhost:27017 |
+| REDIS_HOST     | Redis 主机               | localhost                 |
+| JWT_SECRET     | JWT 密钥                 | your-secret-key           |
+| OPENAI_API_KEY | OpenAI API Key           | -                         |
 
 完整配置见 `backend/.env.example`
 
@@ -248,6 +256,7 @@ docker-compose down
 ### 后端开发
 
 1. **添加新的 API 端点**
+
    - 在 `internal/handler` 添加处理器
    - 在 `cmd/server/router.go` 注册路由
    - 在 `internal/service` 添加业务逻辑
@@ -259,6 +268,7 @@ docker-compose down
 ### 前端开发
 
 1. **添加新页面**
+
    - 在 `src/pages` 创建页面组件
    - 在 `App.tsx` 添加路由配置
 
@@ -309,7 +319,7 @@ docker-compose logs -f frontend
 ```typescript
 proxy: {
   '/api': {
-    target: 'http://localhost:8080',
+    target: 'http://localhost:8000',
     changeOrigin: true,
   },
 }

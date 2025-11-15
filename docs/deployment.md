@@ -24,12 +24,14 @@
 ## 环境要求
 
 ### 最低配置
+
 - CPU: 2 核
 - 内存: 4GB
 - 磁盘: 20GB
 - 操作系统: Linux (Ubuntu 20.04+ / CentOS 7+)
 
 ### 推荐配置
+
 - CPU: 4 核+
 - 内存: 8GB+
 - 磁盘: 50GB+
@@ -64,6 +66,7 @@ vim backend/.env
 ```
 
 必须修改的配置项：
+
 - `JWT_SECRET`: 生产环境的 JWT 密钥
 - `MYSQL_PASSWORD`: MySQL 密码
 - `OPENAI_API_KEY`: OpenAI API Key (如使用)
@@ -86,7 +89,7 @@ docker-compose logs -f
 
 ```bash
 # 检查后端健康状态
-curl http://localhost:8080/health
+curl http://localhost:8000/health
 
 # 访问前端
 http://localhost:3000
@@ -213,7 +216,7 @@ server {
     }
 
     location /api {
-        proxy_pass http://localhost:8080;
+        proxy_pass http://localhost:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -305,6 +308,7 @@ mongodump --db agent_platform --out /backup/mongodb/$(date +%Y%m%d)
 ### 常见问题
 
 1. **后端无法连接数据库**
+
 ```bash
 # 检查数据库服务状态
 sudo systemctl status mysql
@@ -318,6 +322,7 @@ telnet localhost 6379
 ```
 
 2. **前端无法访问**
+
 ```bash
 # 检查 Nginx 状态
 sudo systemctl status nginx
@@ -327,6 +332,7 @@ sudo tail -f /var/log/nginx/error.log
 ```
 
 3. **后端日志查看**
+
 ```bash
 # systemd 服务日志
 sudo journalctl -u agent-platform -f
@@ -343,9 +349,9 @@ docker-compose logs -f backend
 
 ```nginx
 upstream backend {
-    server backend1:8080;
-    server backend2:8080;
-    server backend3:8080;
+    server backend1:8000;
+    server backend2:8000;
+    server backend3:8000;
 }
 
 server {
@@ -377,6 +383,7 @@ server {
 ## 安全加固
 
 1. **定期更新系统**
+
 ```bash
 sudo apt update
 sudo apt upgrade
@@ -431,5 +438,6 @@ docker-compose up -d --build
 ## 支持
 
 如遇部署问题，请查看：
+
 - 项目 Issues: https://github.com/yourname/agent-platform/issues
 - 文档: https://docs.your-domain.com

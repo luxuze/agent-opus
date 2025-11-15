@@ -7,6 +7,8 @@ option go_package = "github.com/yourusername/agent-opus/backend/api/proto;proto"
 import "common.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
 
 // Message 消息实体
 message Message {
@@ -70,4 +72,37 @@ message ListConversationsResponse {
   int32 page = 2;
   int32 page_size = 3;
   int64 total = 4;
+}
+
+// Conversation 服务定义
+service ConversationService {
+  // 创建对话
+  rpc CreateConversation(CreateConversationRequest) returns (Conversation) {
+    option (google.api.http) = {
+      post: "/api/v1/conversations"
+      body: "*"
+    };
+  }
+
+  // 获取对话详情
+  rpc GetConversation(GetConversationRequest) returns (Conversation) {
+    option (google.api.http) = {
+      get: "/api/v1/conversations/{id}"
+    };
+  }
+
+  // 获取对话列表
+  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/conversations"
+    };
+  }
+
+  // 发送消息
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/conversations/{conversation_id}/messages"
+      body: "*"
+    };
+  }
 }

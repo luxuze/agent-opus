@@ -23,14 +23,14 @@ fi
 # 后台运行后端
 ./agent-platform &
 BACKEND_PID=$!
-echo "✅ 后端已启动 (PID: $BACKEND_PID) - http://localhost:8080"
+echo "✅ 后端已启动 (PID: $BACKEND_PID) - http://localhost:8000"
 
 # 等待后端启动
 sleep 2
 
 # 测试后端
 echo "🔍 测试后端健康检查..."
-HEALTH=$(curl -s http://localhost:8080/health)
+HEALTH=$(curl -s http://localhost:8000/health)
 if [[ $HEALTH == *"healthy"* ]]; then
     echo "✅ 后端运行正常"
 else
@@ -51,15 +51,15 @@ echo ""
 echo "========================================="
 echo "  服务已启动"
 echo "========================================="
-echo "  后端: http://localhost:8080"
+echo "  后端: http://localhost:8000"
 echo "  后端 PID: $BACKEND_PID"
 echo ""
 echo "启动前端请运行:"
 echo "  cd frontend && npm run dev"
 echo ""
 echo "测试 API:"
-echo "  curl http://localhost:8080/health"
-echo "  curl http://localhost:8080/api/v1/agents"
+echo "  curl http://localhost:8000/health"
+echo "  curl http://localhost:8000/api/v1/agents"
 echo ""
 echo "停止后端:"
 echo "  kill $BACKEND_PID"

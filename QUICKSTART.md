@@ -19,12 +19,13 @@ go mod tidy
 go run cmd/server/main.go
 ```
 
-后端会在 http://localhost:8080 启动
+后端会在 http://localhost:8000 启动
 
 测试 API：
+
 ```bash
-curl http://localhost:8080/health
-curl http://localhost:8080/api/v1/ping
+curl http://localhost:8000/health
+curl http://localhost:8000/api/v1/ping
 ```
 
 ### 2. 启动前端
@@ -46,6 +47,7 @@ npm run dev
 ### 解决端口冲突
 
 如果您本地已有 MySQL (3306) 或 Redis (6379) 运行，我们已将端口修改为：
+
 - MySQL: 3307 -> 3306 (容器内)
 - MongoDB: 27017 (保持不变)
 - Redis: 需要修改或停止本地 Redis
@@ -55,13 +57,13 @@ npm run dev
 将 Redis 和 MongoDB 端口也改为不冲突的端口：
 
 ```yaml
-  redis:
-    ports:
-      - "6380:6379"  # 改用 6380
+redis:
+  ports:
+    - "6380:6379" # 改用 6380
 
-  mongodb:
-    ports:
-      - "27018:27017"  # 改用 27018
+mongodb:
+  ports:
+    - "27018:27017" # 改用 27018
 ```
 
 然后更新 backend/.env 中的配置：
@@ -146,9 +148,9 @@ cd backend
 go run cmd/server/main.go
 
 # 在另一个终端测试 API
-curl http://localhost:8080/health
-curl http://localhost:8080/api/v1/agents
-curl -X POST http://localhost:8080/api/v1/agents \
+curl http://localhost:8000/health
+curl http://localhost:8000/api/v1/agents
+curl -X POST http://localhost:8000/api/v1/agents \
   -H "Content-Type: application/json" \
   -d '{"name":"Test Agent","description":"A test agent","type":"single"}'
 ```
@@ -158,6 +160,7 @@ curl -X POST http://localhost:8080/api/v1/agents \
 ### Q: 端口被占用怎么办？
 
 查看占用端口的进程：
+
 ```bash
 # MacOS/Linux
 lsof -i :3306
@@ -177,7 +180,8 @@ brew services stop mongodb-community
 ### Q: 前端无法连接后端？
 
 确保：
-1. 后端在 8080 端口运行
+
+1. 后端在 8000 端口运行
 2. 前端 vite.config.ts 中的代理配置正确
 3. CORS 配置包含了前端地址
 

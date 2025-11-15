@@ -7,6 +7,8 @@ option go_package = "github.com/yourusername/agent-opus/backend/api/proto;proto"
 import "common.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
 
 // Tool 工具实体
 message Tool {
@@ -65,4 +67,36 @@ message DeleteToolRequest {
 // 删除工具响应
 message DeleteToolResponse {
   string id = 1;
+}
+
+// Tool 服务定义
+service ToolService {
+  // 创建工具
+  rpc CreateTool(CreateToolRequest) returns (Tool) {
+    option (google.api.http) = {
+      post: "/api/v1/tools"
+      body: "*"
+    };
+  }
+
+  // 获取工具列表
+  rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/tools"
+    };
+  }
+
+  // 获取工具详情
+  rpc GetTool(GetToolRequest) returns (Tool) {
+    option (google.api.http) = {
+      get: "/api/v1/tools/{id}"
+    };
+  }
+
+  // 删除工具
+  rpc DeleteTool(DeleteToolRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/tools/{id}"
+    };
+  }
 }

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "proto": "protoc -I ../proto --js_out=import_style=commonjs:src/proto --grpc-web_out=import_style=typescript,mode=grpcwebtext:src/proto ../proto/*.proto"
   },
   "dependencies": {
     "@ant-design/icons": "^5.2.6",

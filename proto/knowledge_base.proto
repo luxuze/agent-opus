@@ -7,6 +7,8 @@ option go_package = "github.com/yourusername/agent-opus/backend/api/proto;proto"
 import "common.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
 
 // Document 文档实体
 message Document {
@@ -80,4 +82,44 @@ message DeleteKnowledgeBaseRequest {
 // 删除知识库响应
 message DeleteKnowledgeBaseResponse {
   string id = 1;
+}
+
+// KnowledgeBase 服务定义
+service KnowledgeBaseService {
+  // 创建知识库
+  rpc CreateKnowledgeBase(CreateKnowledgeBaseRequest) returns (KnowledgeBase) {
+    option (google.api.http) = {
+      post: "/api/v1/knowledge-bases"
+      body: "*"
+    };
+  }
+
+  // 获取知识库列表
+  rpc ListKnowledgeBases(ListKnowledgeBasesRequest) returns (ListKnowledgeBasesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/knowledge-bases"
+    };
+  }
+
+  // 获取知识库详情
+  rpc GetKnowledgeBase(GetKnowledgeBaseRequest) returns (KnowledgeBase) {
+    option (google.api.http) = {
+      get: "/api/v1/knowledge-bases/{id}"
+    };
+  }
+
+  // 上传文档
+  rpc UploadDocument(UploadDocumentRequest) returns (Document) {
+    option (google.api.http) = {
+      post: "/api/v1/knowledge-bases/{knowledge_base_id}/documents"
+      body: "*"
+    };
+  }
+
+  // 删除知识库
+  rpc DeleteKnowledgeBase(DeleteKnowledgeBaseRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/knowledge-bases/{id}"
+    };
+  }
 }

@@ -3,16 +3,18 @@
 # Proto related commands
 proto: ## Generate Go code from proto files
 	@echo "Generating Go code from proto files..."
-	@mkdir -p api/proto/gen
-	@protoc --go_out=api/proto/gen --go_opt=paths=source_relative \
-		--go-grpc_out=api/proto/gen --go-grpc_opt=paths=source_relative \
-		-I api/proto \
-		api/proto/*.proto
+	@mkdir -p gen/go
+	@protoc --go_out=gen/go --go_opt=paths=source_relative \
+		--go-grpc_out=gen/go --go-grpc_opt=paths=source_relative \
+		--grpc-gateway_out=gen/go --grpc-gateway_opt=paths=source_relative \
+		--grpc-gateway_opt=generate_unbound_methods=true \
+		-I ../proto \
+		../proto/*.proto
 	@echo "Proto generation complete!"
 
 proto-clean: ## Clean generated proto files
 	@echo "Cleaning generated proto files..."
-	@rm -rf api/proto/gen
+	@rm -rf gen/go
 	@echo "Clean complete!"
 
 # Build commands
@@ -37,11 +39,14 @@ clean: proto-clean ## Clean all build artifacts
 # Development commands
 dev: proto build run ## Generate proto, build and run
 
-install-tools: ## Install required tools
-	@echo "Installing protoc plugins..."
+install-tools: ## Install required Go tools (backend only)
+	@echo "Installing Go protoc plugins..."
 	@go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	@echo "Tools installed!"
+	@echo "✓ Go tools installed!"
+	@echo ""
+	@echo "For full installation (including frontend tools), run from project root:"
+	@echo "  cd .. && make install-proto-tools"
 
 help: ## Show this help message
 	@echo "Available commands:"

@@ -7,6 +7,8 @@ option go_package = "github.com/yourusername/agent-opus/backend/api/proto;proto"
 import "common.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
 
 // Agent 实体
 message Agent {
@@ -84,4 +86,44 @@ message DeleteAgentRequest {
 // 删除 Agent 响应
 message DeleteAgentResponse {
   string id = 1;
+}
+
+// Agent 服务定义
+service AgentService {
+  // 创建 Agent
+  rpc CreateAgent(CreateAgentRequest) returns (Agent) {
+    option (google.api.http) = {
+      post: "/api/v1/agents"
+      body: "*"
+    };
+  }
+
+  // 获取 Agent 列表
+  rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/agents"
+    };
+  }
+
+  // 获取 Agent 详情
+  rpc GetAgent(GetAgentRequest) returns (Agent) {
+    option (google.api.http) = {
+      get: "/api/v1/agents/{id}"
+    };
+  }
+
+  // 更新 Agent
+  rpc UpdateAgent(UpdateAgentRequest) returns (Agent) {
+    option (google.api.http) = {
+      put: "/api/v1/agents/{id}"
+      body: "*"
+    };
+  }
+
+  // 删除 Agent
+  rpc DeleteAgent(DeleteAgentRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/agents/{id}"
+    };
+  }
 }

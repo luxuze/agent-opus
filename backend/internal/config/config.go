@@ -22,9 +22,11 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port string
-	Mode string
-	Host string
+	Port     string // Deprecated: Use GRPCPort instead
+	GRPCPort string
+	HTTPPort string
+	Mode     string
+	Host     string
 }
 
 type MySQLConfig struct {
@@ -83,9 +85,11 @@ func Load() *Config {
 
 	return &Config{
 		Server: ServerConfig{
-			Port: getEnv("SERVER_PORT", "8080"),
-			Mode: getEnv("SERVER_MODE", "debug"),
-			Host: getEnv("SERVER_HOST", "0.0.0.0"),
+			Port:     getEnv("SERVER_PORT", "9000"), // For backward compatibility
+			GRPCPort: getEnv("GRPC_PORT", getEnv("SERVER_PORT", "9000")),
+			HTTPPort: getEnv("HTTP_PORT", "8000"),
+			Mode:     getEnv("SERVER_MODE", "debug"),
+			Host:     getEnv("SERVER_HOST", "0.0.0.0"),
 		},
 		MySQL: MySQLConfig{
 			Host:     getEnv("MYSQL_HOST", "localhost"),

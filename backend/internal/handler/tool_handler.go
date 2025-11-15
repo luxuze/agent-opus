@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	pb "agent-platform/api/proto/gen"
+	pb "agent-platform/gen/go"
 	"agent-platform/pkg/response"
 
 	"github.com/gin-gonic/gin"

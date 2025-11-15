@@ -5,7 +5,7 @@ echo "  Agent Platform API 测试"
 echo "========================================="
 echo ""
 
-BASE_URL="http://localhost:8080"
+BASE_URL="http://localhost:8000"
 
 # 测试健康检查
 echo "1. 测试健康检查..."

@@ -1,13 +1,15 @@
 services:
-  # Backend Service
+  # Backend Service (gRPC + HTTP REST API)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: agent-platform-backend
     environment:
-      SERVER_PORT: 8080
+      GRPC_PORT: 9000
+      HTTP_PORT: 8000
       SERVER_MODE: release
+      SERVER_HOST: 0.0.0.0
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_USER: agent_user
@@ -16,10 +18,9 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       JWT_SECRET: your-secret-key-change-in-production
-      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
     ports:
-      - "8080:8080"
-    depends_on: []
+      - "9000:9000" # gRPC port
+      - "8000:8000" # HTTP REST API port
     networks:
       - agent-network
     restart: unless-stopped
@@ -32,8 +33,6 @@ services:
     container_name: agent-platform-frontend
     ports:
       - "5173:80"
-    depends_on:
-      - backend
     networks:
       - agent-network
     restart: unless-stopped
