@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/yourusername/agent-opus/backend/api/proto;proto";
+
+import "common.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// Message 消息实体
+message Message {
+  string id = 1;
+  string role = 2;                           // user, assistant, system
+  string content = 3;
+  google.protobuf.Struct metadata = 4;       // 元数据
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+// Conversation 对话实体
+message Conversation {
+  string id = 1;
+  string agent_id = 2;
+  string user_id = 3;
+  string title = 4;
+  repeated Message messages = 5;
+  google.protobuf.Struct context = 6;        // 上下文信息
+  string status = 7;                          // active, ended, archived
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+  google.protobuf.Timestamp last_message_at = 10;
+}
+
+// 创建对话请求
+message CreateConversationRequest {
+  string agent_id = 1;
+  string title = 2;
+  google.protobuf.Struct context = 3;
+}
+
+// 发送消息请求
+message SendMessageRequest {
+  string conversation_id = 1;
+  string content = 2;
+  string role = 3;
+  google.protobuf.Struct metadata = 4;
+}
+
+// 发送消息响应
+message SendMessageResponse {
+  string conversation_id = 1;
+  repeated Message messages = 2;
+}
+
+// 获取对话请求
+message GetConversationRequest {
+  string id = 1;
+}
+
+// 列表对话请求
+message ListConversationsRequest {
+  string agent_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// 列表对话响应
+message ListConversationsResponse {
+  repeated Conversation items = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  int64 total = 4;
+}

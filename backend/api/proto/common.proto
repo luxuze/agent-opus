@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/yourusername/agent-opus/backend/api/proto;proto";
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// 统一响应格式
+message Response {
+  int32 code = 1;                    // 状态码：0表示成功，非0表示错误
+  string message = 2;                 // 消息描述
+  google.protobuf.Struct data = 3;   // 实际数据（灵活的JSON结构）
+}
+
+// 分页请求参数
+message PaginationRequest {
+  int32 page = 1;          // 页码，从1开始
+  int32 page_size = 2;     // 每页数量，默认10
+}
+
+// 分页响应
+message PaginationResponse {
+  repeated google.protobuf.Struct items = 1;  // 数据列表
+  int32 page = 2;                              // 当前页码
+  int32 page_size = 3;                         // 每页数量
+  int64 total = 4;                             // 总数
+}
+
+// 通用的ID请求
+message IDRequest {
+  string id = 1;
+}
+
+// 通用的空响应
+message Empty {}

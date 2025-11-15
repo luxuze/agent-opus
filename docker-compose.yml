@@ -1,0 +1,43 @@
+services:
+  # Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agent-platform-backend
+    environment:
+      SERVER_PORT: 8080
+      SERVER_MODE: release
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: agent_user
+      MYSQL_PASSWORD: agent_password
+      MYSQL_DATABASE: agent_platform
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: your-secret-key-change-in-production
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+    ports:
+      - "8080:8080"
+    depends_on: []
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: agent-platform-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+networks:
+  agent-network:
+    driver: bridge

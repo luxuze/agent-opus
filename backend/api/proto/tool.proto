@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/yourusername/agent-opus/backend/api/proto;proto";
+
+import "common.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// Tool 工具实体
+message Tool {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string type = 4;                           // api, function, plugin
+  google.protobuf.Struct schema = 5;         // 工具的schema定义
+  string implementation = 6;                  // 实现代码或URL
+  string version = 7;
+  bool is_public = 8;                         // 是否公开
+  string created_by = 9;
+  string category = 10;                       // 分类：search, communication, data等
+  repeated string tags = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+}
+
+// 创建工具请求
+message CreateToolRequest {
+  string name = 1;
+  string description = 2;
+  string type = 3;
+  google.protobuf.Struct schema = 4;
+  string implementation = 5;
+  string category = 6;
+  repeated string tags = 7;
+}
+
+// 列表工具请求
+message ListToolsRequest {
+  string type = 1;
+  string category = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+// 列表工具响应
+message ListToolsResponse {
+  repeated Tool items = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  int64 total = 4;
+}
+
+// 获取工具请求
+message GetToolRequest {
+  string id = 1;
+}
+
+// 删除工具请求
+message DeleteToolRequest {
+  string id = 1;
+}
+
+// 删除工具响应
+message DeleteToolResponse {
+  string id = 1;
+}

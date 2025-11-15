@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/yourusername/agent-opus/backend/api/proto;proto";
+
+import "common.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// Agent 实体
+message Agent {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string type = 4;                              // single, workflow, multi-agent
+  google.protobuf.Struct model_config = 5;      // 模型配置
+  repeated string tools = 6;                     // 工具ID列表
+  repeated string knowledge_bases = 7;           // 知识库ID列表
+  string prompt_template = 8;                    // 提示词模板
+  google.protobuf.Struct parameters = 9;        // 自定义参数
+  string status = 10;                            // draft, published, archived
+  string version = 11;                           // 版本号
+  string created_by = 12;                        // 创建者ID
+  repeated string tags = 13;                     // 标签
+  string folder = 14;                            // 文件夹路径
+  google.protobuf.Timestamp created_at = 15;    // 创建时间
+  google.protobuf.Timestamp updated_at = 16;    // 更新时间
+}
+
+// 创建 Agent 请求
+message CreateAgentRequest {
+  string name = 1;
+  string description = 2;
+  string type = 3;
+  google.protobuf.Struct model_config = 4;
+  repeated string tools = 5;
+  repeated string knowledge_bases = 6;
+  string prompt_template = 7;
+  google.protobuf.Struct parameters = 8;
+  repeated string tags = 9;
+  string folder = 10;
+}
+
+// 列表 Agent 请求
+message ListAgentsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string status = 3;        // 筛选状态
+  string type = 4;          // 筛选类型
+}
+
+// 列表 Agent 响应
+message ListAgentsResponse {
+  repeated Agent items = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  int64 total = 4;
+}
+
+// 获取 Agent 请求
+message GetAgentRequest {
+  string id = 1;
+}
+
+// 更新 Agent 请求
+message UpdateAgentRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  google.protobuf.Struct model_config = 4;
+  repeated string tools = 5;
+  repeated string knowledge_bases = 6;
+  string prompt_template = 7;
+  google.protobuf.Struct parameters = 8;
+  string status = 9;
+}
+
+// 删除 Agent 请求
+message DeleteAgentRequest {
+  string id = 1;
+}
+
+// 删除 Agent 响应
+message DeleteAgentResponse {
+  string id = 1;
+}

@@ -1,0 +1,16 @@
+# Backend
+backend/logs
+backend/.env
+backend/tmp
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/.env
+frontend/.env.local
+
+# General
+.git
+.gitignore
+*.md
+.DS_Store
