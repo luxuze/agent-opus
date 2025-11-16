@@ -1,0 +1,195 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/yourusername/agent-opus/backend/api/proto;proto";
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+// Workflow entity
+message Workflow {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated WorkflowStep steps = 4;
+  google.protobuf.Struct config = 5;
+  string status = 6;                              // draft, active, archived
+  string created_by = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+// Workflow step definition
+message WorkflowStep {
+  string id = 1;
+  string name = 2;
+  string type = 3;                                // agent, condition, parallel
+  string agent_id = 4;                            // For agent type steps
+  google.protobuf.Struct config = 5;              // Step configuration
+  repeated string next_steps = 6;                 // Next step IDs
+  google.protobuf.Struct condition = 7;           // Condition for conditional steps
+}
+
+// Workflow execution entity
+message WorkflowExecution {
+  string id = 1;
+  string workflow_id = 2;
+  google.protobuf.Struct input = 3;
+  google.protobuf.Struct output = 4;
+  google.protobuf.Struct context = 5;
+  string status = 6;                              // pending, running, completed, failed, cancelled
+  string current_step = 7;
+  string error = 8;
+  string started_by = 9;
+  google.protobuf.Timestamp started_at = 10;
+  google.protobuf.Timestamp completed_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+// Create workflow request
+message CreateWorkflowRequest {
+  string name = 1;
+  string description = 2;
+  repeated WorkflowStep steps = 3;
+  google.protobuf.Struct config = 4;
+}
+
+// List workflows request
+message ListWorkflowsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string status = 3;
+}
+
+// List workflows response
+message ListWorkflowsResponse {
+  repeated Workflow items = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  int64 total = 4;
+}
+
+// Get workflow request
+message GetWorkflowRequest {
+  string id = 1;
+}
+
+// Update workflow request
+message UpdateWorkflowRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated WorkflowStep steps = 4;
+  google.protobuf.Struct config = 5;
+  string status = 6;
+}
+
+// Delete workflow request
+message DeleteWorkflowRequest {
+  string id = 1;
+}
+
+// Execute workflow request
+message ExecuteWorkflowRequest {
+  string workflow_id = 1;
+  google.protobuf.Struct input = 2;
+}
+
+// Get execution request
+message GetExecutionRequest {
+  string id = 1;
+}
+
+// List executions request
+message ListExecutionsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string workflow_id = 3;
+  string status = 4;
+}
+
+// List executions response
+message ListExecutionsResponse {
+  repeated WorkflowExecution items = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  int64 total = 4;
+}
+
+// Cancel execution request
+message CancelExecutionRequest {
+  string id = 1;
+}
+
+// Workflow service definition
+service WorkflowService {
+  // Create workflow
+  rpc CreateWorkflow(CreateWorkflowRequest) returns (Workflow) {
+    option (google.api.http) = {
+      post: "/api/v1/workflows"
+      body: "*"
+    };
+  }
+
+  // List workflows
+  rpc ListWorkflows(ListWorkflowsRequest) returns (ListWorkflowsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/workflows"
+    };
+  }
+
+  // Get workflow
+  rpc GetWorkflow(GetWorkflowRequest) returns (Workflow) {
+    option (google.api.http) = {
+      get: "/api/v1/workflows/{id}"
+    };
+  }
+
+  // Update workflow
+  rpc UpdateWorkflow(UpdateWorkflowRequest) returns (Workflow) {
+    option (google.api.http) = {
+      put: "/api/v1/workflows/{id}"
+      body: "*"
+    };
+  }
+
+  // Delete workflow
+  rpc DeleteWorkflow(DeleteWorkflowRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/workflows/{id}"
+    };
+  }
+
+  // Execute workflow
+  rpc ExecuteWorkflow(ExecuteWorkflowRequest) returns (WorkflowExecution) {
+    option (google.api.http) = {
+      post: "/api/v1/workflows/{workflow_id}/execute"
+      body: "*"
+    };
+  }
+
+  // Get execution
+  rpc GetExecution(GetExecutionRequest) returns (WorkflowExecution) {
+    option (google.api.http) = {
+      get: "/api/v1/executions/{id}"
+    };
+  }
+
+  // List executions
+  rpc ListExecutions(ListExecutionsRequest) returns (ListExecutionsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/executions"
+    };
+  }
+
+  // Cancel execution
+  rpc CancelExecution(CancelExecutionRequest) returns (WorkflowExecution) {
+    option (google.api.http) = {
+      post: "/api/v1/executions/{id}/cancel"
+      body: "*"
+    };
+  }
+}

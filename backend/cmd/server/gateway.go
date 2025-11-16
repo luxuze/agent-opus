@@ -50,6 +50,10 @@ func setupGateway(grpcAddress string, httpPort string, logger *zap.Logger) error
 		return fmt.Errorf("failed to register KnowledgeBaseService: %w", err)
 	}
 
+	if err := pb.RegisterUserServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts); err != nil {
+		return fmt.Errorf("failed to register UserService: %w", err)
+	}
+
 	// 添加 CORS 支持
 	handler := cors(mux)
 

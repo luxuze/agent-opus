@@ -2,27 +2,31 @@ package grpc
 
 import (
 	"context"
-	"time"
 
 	pb "agent-platform/gen/go"
+	"agent-platform/internal/model/ent"
+	"agent-platform/internal/repository"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // AgentServer gRPC Agent 服务实现
 type AgentServer struct {
 	pb.UnimplementedAgentServiceServer
-	// 这里可以注入 service 层
+	client *ent.Client
+	repo   *repository.AgentRepository
 }
 
 // NewAgentServer 创建 Agent 服务实例
-func NewAgentServer() *AgentServer {
-	return &AgentServer{}
+func NewAgentServer(client *ent.Client) *AgentServer {
+	return &AgentServer{
+		client: client,
+		repo:   repository.NewAgentRepository(client),
+	}
 }
 
 // CreateAgent 创建 Agent
@@ -32,52 +36,86 @@ func (s *AgentServer) CreateAgent(ctx context.Context, req *pb.CreateAgentReques
 		return nil, status.Error(codes.InvalidArgument, "name is required")
 	}
 
-	now := timestamppb.New(time.Now())
-	agent := &pb.Agent{
-		Id:             uuid.New().String(),
-		Name:           req.Name,
-		Description:    req.Description,
-		Type:           req.Type,
-		ModelConfig:    req.ModelConfig,
-		Tools:          req.Tools,
-		KnowledgeBases: req.KnowledgeBases,
-		PromptTemplate: req.PromptTemplate,
-		Parameters:     req.Parameters,
-		Status:         "draft",
-		Version:        "1.0.0",
-		CreatedBy:      "system", // TODO: 从 context 中获取用户信息
-		Tags:           req.Tags,
-		Folder:         req.Folder,
-		CreatedAt:      now,
-		UpdatedAt:      now,
+	// 准备数据
+	agentID := uuid.New().String()
+	agentType := req.Type
+	if agentType == "" {
+		agentType = "single"
 	}
 
-	return agent, nil
+	// 创建 ent entity
+	entAgent := &ent.Agent{
+		ID:          agentID,
+		Name:        req.Name,
+		Description: req.Description,
+		Type:        agentType,
+		Status:      "draft",
+		Version:     "1.0.0",
+		CreatedBy:   "system", // TODO: 从 context 中获取用户信息
+	}
+
+	// 设置可选字段
+	if req.ModelConfig != nil {
+		entAgent.ModelConfig = req.ModelConfig.AsMap()
+	}
+	if req.Tools != nil {
+		entAgent.Tools = req.Tools
+	}
+	if req.KnowledgeBases != nil {
+		entAgent.KnowledgeBases = req.KnowledgeBases
+	}
+	if req.PromptTemplate != "" {
+		entAgent.PromptTemplate = req.PromptTemplate
+	}
+	if req.Parameters != nil {
+		entAgent.Parameters = req.Parameters.AsMap()
+	}
+	if req.Tags != nil {
+		entAgent.Tags = req.Tags
+	}
+	if req.Folder != "" {
+		entAgent.Folder = req.Folder
+	}
+
+	// 保存到数据库
+	created, err := s.repo.Create(ctx, entAgent)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create agent: %v", err)
+	}
+
+	// 转换为 protobuf
+	return entAgentToProto(created), nil
 }
 
 // ListAgents 获取 Agent 列表
 func (s *AgentServer) ListAgents(ctx context.Context, req *pb.ListAgentsRequest) (*pb.ListAgentsResponse, error) {
-	// Mock 数据
-	now := timestamppb.New(time.Now())
-	agents := []*pb.Agent{
-		{
-			Id:          uuid.New().String(),
-			Name:        "Customer Service Agent",
-			Description: "AI agent for customer service",
-			Type:        "single",
-			Status:      "published",
-			Version:     "1.0.0",
-			CreatedBy:   "admin",
-			CreatedAt:   now,
-			UpdatedAt:   now,
-		},
+	// 设置默认分页参数
+	page := req.Page
+	if page <= 0 {
+		page = 1
+	}
+	pageSize := req.PageSize
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	// 从数据库查询
+	agents, total, err := s.repo.List(ctx, page, pageSize, req.Status, req.Type, "")
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list agents: %v", err)
+	}
+
+	// 转换为 protobuf
+	pbAgents := make([]*pb.Agent, len(agents))
+	for i, agent := range agents {
+		pbAgents[i] = entAgentToProto(agent)
 	}
 
 	return &pb.ListAgentsResponse{
-		Items:    agents,
-		Page:     req.Page,
-		PageSize: req.PageSize,
-		Total:    1,
+		Items:    pbAgents,
+		Page:     page,
+		PageSize: pageSize,
+		Total:    int64(total),
 	}, nil
 }
 
@@ -87,30 +125,14 @@ func (s *AgentServer) GetAgent(ctx context.Context, req *pb.GetAgentRequest) (*p
 		return nil, status.Error(codes.InvalidArgument, "id is required")
 	}
 
-	// Mock model config
-	modelConfig, _ := structpb.NewStruct(map[string]interface{}{
-		"model":       "gpt-4",
-		"temperature": 0.7,
-	})
-
-	now := timestamppb.New(time.Now())
-	agent := &pb.Agent{
-		Id:             req.Id,
-		Name:           "Customer Service Agent",
-		Description:    "AI agent for customer service",
-		Type:           "single",
-		ModelConfig:    modelConfig,
-		Tools:          []string{"search", "email"},
-		KnowledgeBases: []string{"kb-001"},
-		PromptTemplate: "You are a helpful customer service agent.",
-		Status:         "published",
-		Version:        "1.0.0",
-		CreatedBy:      "admin",
-		CreatedAt:      now,
-		UpdatedAt:      now,
+	// 从数据库查询
+	agent, err := s.repo.Get(ctx, req.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "agent not found: %v", err)
 	}
 
-	return agent, nil
+	// 转换为 protobuf
+	return entAgentToProto(agent), nil
 }
 
 // UpdateAgent 更新 Agent
@@ -119,21 +141,41 @@ func (s *AgentServer) UpdateAgent(ctx context.Context, req *pb.UpdateAgentReques
 		return nil, status.Error(codes.InvalidArgument, "id is required")
 	}
 
-	now := timestamppb.New(time.Now())
-	agent := &pb.Agent{
-		Id:             req.Id,
-		Name:           req.Name,
-		Description:    req.Description,
-		ModelConfig:    req.ModelConfig,
-		Tools:          req.Tools,
-		KnowledgeBases: req.KnowledgeBases,
-		PromptTemplate: req.PromptTemplate,
-		Parameters:     req.Parameters,
-		Status:         req.Status,
-		UpdatedAt:      now,
+	// 准备更新字段
+	updates := make(map[string]interface{})
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.ModelConfig != nil {
+		updates["model_config"] = req.ModelConfig.AsMap()
+	}
+	if req.Tools != nil {
+		updates["tools"] = req.Tools
+	}
+	if req.KnowledgeBases != nil {
+		updates["knowledge_bases"] = req.KnowledgeBases
+	}
+	if req.PromptTemplate != "" {
+		updates["prompt_template"] = req.PromptTemplate
+	}
+	if req.Parameters != nil {
+		updates["parameters"] = req.Parameters.AsMap()
+	}
+	if req.Status != "" {
+		updates["status"] = req.Status
 	}
 
-	return agent, nil
+	// 更新数据库
+	updated, err := s.repo.Update(ctx, req.Id, updates)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update agent: %v", err)
+	}
+
+	// 转换为 protobuf
+	return entAgentToProto(updated), nil
 }
 
 // DeleteAgent 删除 Agent
@@ -142,7 +184,45 @@ func (s *AgentServer) DeleteAgent(ctx context.Context, req *pb.DeleteAgentReques
 		return nil, status.Error(codes.InvalidArgument, "id is required")
 	}
 
-	// TODO: 实际删除逻辑
+	// 从数据库删除
+	err := s.repo.Delete(ctx, req.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete agent: %v", err)
+	}
 
 	return &emptypb.Empty{}, nil
+}
+
+// Helper function to convert ent.Agent to pb.Agent
+func entAgentToProto(agent *ent.Agent) *pb.Agent {
+	pbAgent := &pb.Agent{
+		Id:          agent.ID,
+		Name:        agent.Name,
+		Description: agent.Description,
+		Type:        agent.Type,
+		Status:      agent.Status,
+		Version:     agent.Version,
+		CreatedBy:   agent.CreatedBy,
+		CreatedAt:   timestamppb.New(agent.CreatedAt),
+		UpdatedAt:   timestamppb.New(agent.UpdatedAt),
+	}
+
+	// 设置可选字段
+	if agent.PromptTemplate != "" {
+		pbAgent.PromptTemplate = agent.PromptTemplate
+	}
+	if agent.Folder != "" {
+		pbAgent.Folder = agent.Folder
+	}
+	if agent.Tools != nil {
+		pbAgent.Tools = agent.Tools
+	}
+	if agent.KnowledgeBases != nil {
+		pbAgent.KnowledgeBases = agent.KnowledgeBases
+	}
+	if agent.Tags != nil {
+		pbAgent.Tags = agent.Tags
+	}
+
+	return pbAgent
 }

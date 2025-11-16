@@ -5,6 +5,7 @@ import (
 	"time"
 
 	pb "agent-platform/gen/go"
+	"agent-platform/internal/model/ent"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -17,11 +18,14 @@ import (
 // ToolServer gRPC Tool 服务实现
 type ToolServer struct {
 	pb.UnimplementedToolServiceServer
+	client *ent.Client
 }
 
 // NewToolServer 创建 Tool 服务实例
-func NewToolServer() *ToolServer {
-	return &ToolServer{}
+func NewToolServer(client *ent.Client) *ToolServer {
+	return &ToolServer{
+		client: client,
+	}
 }
 
 // CreateTool 创建工具

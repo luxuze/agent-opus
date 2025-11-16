@@ -11,9 +11,8 @@ import (
 
 type Config struct {
 	Server    ServerConfig
-	MySQL     MySQLConfig
+	Postgres  PostgresConfig
 	Redis     RedisConfig
-	Milvus    MilvusConfig
 	JWT       JWTConfig
 	OpenAI    OpenAIConfig
 	Embedding EmbeddingConfig
@@ -29,12 +28,13 @@ type ServerConfig struct {
 	Host     string
 }
 
-type MySQLConfig struct {
+type PostgresConfig struct {
 	Host     string
 	Port     string
 	User     string
 	Password string
 	Database string
+	SSLMode  string
 }
 
 type RedisConfig struct {
@@ -42,11 +42,6 @@ type RedisConfig struct {
 	Port     string
 	Password string
 	DB       int
-}
-
-type MilvusConfig struct {
-	Host string
-	Port string
 }
 
 type JWTConfig struct {
@@ -91,22 +86,19 @@ func Load() *Config {
 			Mode:     getEnv("SERVER_MODE", "debug"),
 			Host:     getEnv("SERVER_HOST", "0.0.0.0"),
 		},
-		MySQL: MySQLConfig{
-			Host:     getEnv("MYSQL_HOST", "localhost"),
-			Port:     getEnv("MYSQL_PORT", "3306"),
-			User:     getEnv("MYSQL_USER", "root"),
-			Password: getEnv("MYSQL_PASSWORD", ""),
-			Database: getEnv("MYSQL_DATABASE", "agent_platform"),
+		Postgres: PostgresConfig{
+			Host:     getEnv("POSTGRES_HOST", "localhost"),
+			Port:     getEnv("POSTGRES_PORT", "5432"),
+			User:     getEnv("POSTGRES_USER", "postgres"),
+			Password: getEnv("POSTGRES_PASSWORD", ""),
+			Database: getEnv("POSTGRES_DATABASE", "agent_platform"),
+			SSLMode:  getEnv("POSTGRES_SSLMODE", "disable"),
 		},
 		Redis: RedisConfig{
 			Host:     getEnv("REDIS_HOST", "localhost"),
 			Port:     getEnv("REDIS_PORT", "6379"),
 			Password: getEnv("REDIS_PASSWORD", ""),
 			DB:       redisDB,
-		},
-		Milvus: MilvusConfig{
-			Host: getEnv("MILVUS_HOST", "localhost"),
-			Port: getEnv("MILVUS_PORT", "19530"),
 		},
 		JWT: JWTConfig{
 			Secret:      getEnv("JWT_SECRET", "your-secret-key"),
@@ -130,8 +122,8 @@ func Load() *Config {
 	}
 }
 
-func (c *MySQLConfig) DSN() string {
-	return c.User + ":" + c.Password + "@tcp(" + c.Host + ":" + c.Port + ")/" + c.Database + "?parseTime=true&charset=utf8mb4"
+func (c *PostgresConfig) DSN() string {
+	return "host=" + c.Host + " port=" + c.Port + " user=" + c.User + " password=" + c.Password + " dbname=" + c.Database + " sslmode=" + c.SSLMode
 }
 
 func getEnv(key, defaultValue string) string {

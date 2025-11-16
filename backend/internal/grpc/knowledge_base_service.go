@@ -5,6 +5,9 @@ import (
 	"time"
 
 	pb "agent-platform/gen/go"
+	"agent-platform/internal/knowledge"
+	"agent-platform/internal/model/ent"
+	"agent-platform/internal/repository"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -17,11 +20,18 @@ import (
 // KnowledgeBaseServer gRPC KnowledgeBase 服务实现
 type KnowledgeBaseServer struct {
 	pb.UnimplementedKnowledgeBaseServiceServer
+	client   *ent.Client
+	repo     *repository.KnowledgeBaseRepository
+	kbMgr    *knowledge.Manager
 }
 
 // NewKnowledgeBaseServer 创建 KnowledgeBase 服务实例
-func NewKnowledgeBaseServer() *KnowledgeBaseServer {
-	return &KnowledgeBaseServer{}
+func NewKnowledgeBaseServer(client *ent.Client, kbMgr *knowledge.Manager) *KnowledgeBaseServer {
+	return &KnowledgeBaseServer{
+		client: client,
+		repo:   repository.NewKnowledgeBaseRepository(client),
+		kbMgr:  kbMgr,
+	}
 }
 
 // CreateKnowledgeBase 创建知识库

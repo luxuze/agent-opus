@@ -1,11 +1,19 @@
 package main
 
 import (
+	"agent-platform/internal/ai"
+	"agent-platform/internal/auth"
 	"agent-platform/internal/config"
+	"agent-platform/internal/db"
 	grpcserver "agent-platform/internal/grpc"
+	"agent-platform/internal/knowledge"
+	"context"
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 
 	pb "agent-platform/gen/go"
 
@@ -31,6 +39,34 @@ func main() {
 		zap.String("mode", cfg.Server.Mode),
 	)
 
+	// Initialize database
+	ctx := context.Background()
+	dbClient, err := db.NewClient(cfg, logger)
+	if err != nil {
+		logger.Fatal("Failed to connect to database", zap.Error(err))
+	}
+	defer dbClient.Close()
+
+	// Run database migrations
+	if err := dbClient.AutoMigrate(ctx); err != nil {
+		logger.Fatal("Failed to run database migrations", zap.Error(err))
+	}
+
+	// Initialize AI manager
+	aiManager, err := ai.NewManager(cfg, logger)
+	if err != nil {
+		logger.Fatal("Failed to initialize AI manager", zap.Error(err))
+	}
+
+	// Initialize Knowledge Base manager with pgvector
+	kbManager, err := knowledge.NewManager(dbClient.Client, cfg.Postgres.DSN(), cfg.OpenAI.APIKey, cfg.Embedding.Model, logger)
+	if err != nil {
+		logger.Fatal("Failed to initialize KB manager", zap.Error(err))
+	}
+
+	// Initialize JWT service
+	jwtService := auth.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpireHours)
+
 	// Create listener for gRPC
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.GRPCPort)
 	lis, err := net.Listen("tcp", addr)
@@ -38,14 +74,22 @@ func main() {
 		logger.Fatal("Failed to listen", zap.Error(err))
 	}
 
-	// Create gRPC server
-	grpcServer := grpc.NewServer()
+	// Create gRPC server with auth interceptors
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			auth.UnaryAuthInterceptor(jwtService),
+		),
+		grpc.ChainStreamInterceptor(
+			auth.StreamAuthInterceptor(jwtService),
+		),
+	)
 
-	// Register services
-	pb.RegisterAgentServiceServer(grpcServer, grpcserver.NewAgentServer())
-	pb.RegisterConversationServiceServer(grpcServer, grpcserver.NewConversationServer())
-	pb.RegisterToolServiceServer(grpcServer, grpcserver.NewToolServer())
-	pb.RegisterKnowledgeBaseServiceServer(grpcServer, grpcserver.NewKnowledgeBaseServer())
+	// Register services with database client, AI manager, and KB manager
+	pb.RegisterAgentServiceServer(grpcServer, grpcserver.NewAgentServer(dbClient.Client))
+	pb.RegisterConversationServiceServer(grpcServer, grpcserver.NewConversationServer(dbClient.Client, aiManager))
+	pb.RegisterToolServiceServer(grpcServer, grpcserver.NewToolServer(dbClient.Client))
+	pb.RegisterKnowledgeBaseServiceServer(grpcServer, grpcserver.NewKnowledgeBaseServer(dbClient.Client, kbManager))
+	pb.RegisterUserServiceServer(grpcServer, grpcserver.NewUserServer(dbClient.Client, jwtService))
 
 	// Register reflection service (for grpcurl and other tools)
 	reflection.Register(grpcServer)
@@ -57,6 +101,16 @@ func main() {
 
 	logger.Info("gRPC Server listening", zap.String("address", addr))
 	logger.Info("HTTP Gateway listening", zap.String("port", cfg.Server.HTTPPort))
+
+	// Handle graceful shutdown
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-sigCh
+		logger.Info("Shutting down gracefully...")
+		grpcServer.GracefulStop()
+	}()
 
 	// Start gRPC server (blocking)
 	if err := grpcServer.Serve(lis); err != nil {

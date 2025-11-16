@@ -5,6 +5,9 @@ import (
 	"time"
 
 	pb "agent-platform/gen/go"
+	"agent-platform/internal/ai"
+	"agent-platform/internal/model/ent"
+	"agent-platform/internal/repository"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -15,11 +18,20 @@ import (
 // ConversationServer gRPC Conversation 服务实现
 type ConversationServer struct {
 	pb.UnimplementedConversationServiceServer
+	client      *ent.Client
+	aiManager   *ai.Manager
+	convRepo    *repository.ConversationRepository
+	agentRepo   *repository.AgentRepository
 }
 
 // NewConversationServer 创建 Conversation 服务实例
-func NewConversationServer() *ConversationServer {
-	return &ConversationServer{}
+func NewConversationServer(client *ent.Client, aiManager *ai.Manager) *ConversationServer {
+	return &ConversationServer{
+		client:    client,
+		aiManager: aiManager,
+		convRepo:  repository.NewConversationRepository(client),
+		agentRepo: repository.NewAgentRepository(client),
+	}
 }
 
 // CreateConversation 创建对话
@@ -28,21 +40,41 @@ func (s *ConversationServer) CreateConversation(ctx context.Context, req *pb.Cre
 		return nil, status.Error(codes.InvalidArgument, "agent_id is required")
 	}
 
-	now := timestamppb.New(time.Now())
-	conversation := &pb.Conversation{
-		Id:            uuid.New().String(),
-		AgentId:       req.AgentId,
-		UserId:        "anonymous", // TODO: 从 context 获取
-		Title:         req.Title,
-		Messages:      []*pb.Message{},
-		Context:       req.Context,
-		Status:        "active",
-		CreatedAt:     now,
-		UpdatedAt:     now,
-		LastMessageAt: now,
+	// Verify agent exists
+	_, err := s.agentRepo.Get(ctx, req.AgentId)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "agent not found: %v", err)
 	}
 
-	return conversation, nil
+	// Create conversation entity
+	convID := uuid.New().String()
+	title := req.Title
+	if title == "" {
+		title = "New Conversation"
+	}
+
+	entConv := &ent.Conversation{
+		ID:       convID,
+		AgentID:  req.AgentId,
+		UserID:   "anonymous", // TODO: get from context
+		Title:    title,
+		Messages: []interface{}{},
+		Status:   "active",
+	}
+
+	// Set context if provided
+	if req.Context != nil {
+		entConv.Context = req.Context.AsMap()
+	}
+
+	// Save to database
+	created, err := s.convRepo.Create(ctx, entConv)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create conversation: %v", err)
+	}
+
+	// Convert to protobuf
+	return entConversationToProto(created), nil
 }
 
 // GetConversation 获取对话详情
@@ -113,22 +145,112 @@ func (s *ConversationServer) SendMessage(ctx context.Context, req *pb.SendMessag
 		return nil, status.Error(codes.InvalidArgument, "content is required")
 	}
 
-	now := timestamppb.New(time.Now())
+	// Get conversation from database
+	conv, err := s.convRepo.Get(ctx, req.ConversationId)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "conversation not found: %v", err)
+	}
 
-	// 用户消息
+	// Get agent
+	agent, err := s.agentRepo.Get(ctx, conv.AgentID)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "agent not found: %v", err)
+	}
+
+	// Create user message
+	now := time.Now()
 	userMessage := &pb.Message{
 		Id:        uuid.New().String(),
 		Role:      "user",
 		Content:   req.Content,
-		Timestamp: now,
+		Timestamp: timestamppb.New(now),
 	}
 
-	// Mock AI 响应
+	// Build message history for AI
+	messages := []ai.Message{}
+
+	// Add system prompt if agent has one
+	if agent.PromptTemplate != "" {
+		messages = append(messages, ai.Message{
+			Role:    "system",
+			Content: agent.PromptTemplate,
+		})
+	}
+
+	// Add conversation history
+	if conv.Messages != nil {
+		for _, msg := range conv.Messages {
+			if msgMap, ok := msg.(map[string]interface{}); ok {
+				role, _ := msgMap["role"].(string)
+				content, _ := msgMap["content"].(string)
+				if role != "" && content != "" {
+					messages = append(messages, ai.Message{
+						Role:    role,
+						Content: content,
+					})
+				}
+			}
+		}
+	}
+
+	// Add new user message
+	messages = append(messages, ai.Message{
+		Role:    "user",
+		Content: req.Content,
+	})
+
+	// Get model config from agent
+	model := "gpt-4o"
+	temperature := float32(0.7)
+	if agent.ModelConfig != nil {
+		if m, ok := agent.ModelConfig["model"].(string); ok && m != "" {
+			model = m
+		}
+		if t, ok := agent.ModelConfig["temperature"].(float64); ok {
+			temperature = float32(t)
+		}
+	}
+
+	// Call AI service
+	aiResp, err := s.aiManager.Chat(ai.ChatRequest{
+		Model:       model,
+		Messages:    messages,
+		Temperature: temperature,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "AI service error: %v", err)
+	}
+
+	// Create assistant message
 	assistantMessage := &pb.Message{
 		Id:        uuid.New().String(),
 		Role:      "assistant",
-		Content:   "This is a mock response from the agent. In production, this would call the AI model.",
-		Timestamp: timestamppb.New(time.Now().Add(1 * time.Second)),
+		Content:   aiResp.Content,
+		Timestamp: timestamppb.New(time.Now()),
+	}
+
+	// Save messages to conversation
+	userMsgMap := map[string]interface{}{
+		"id":        userMessage.Id,
+		"role":      userMessage.Role,
+		"content":   userMessage.Content,
+		"timestamp": userMessage.Timestamp.AsTime().Unix(),
+	}
+	assistantMsgMap := map[string]interface{}{
+		"id":        assistantMessage.Id,
+		"role":      assistantMessage.Role,
+		"content":   assistantMessage.Content,
+		"timestamp": assistantMessage.Timestamp.AsTime().Unix(),
+	}
+
+	_, err = s.convRepo.AddMessage(ctx, req.ConversationId, userMsgMap)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to save user message: %v", err)
+	}
+
+	_, err = s.convRepo.AddMessage(ctx, req.ConversationId, assistantMsgMap)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to save assistant message: %v", err)
 	}
 
 	return &pb.SendMessageResponse{

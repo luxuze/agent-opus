@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/yourusername/agent-opus/backend/api/proto;proto";
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+// User entity
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string role = 4;                                // user, admin
+  string status = 5;                              // active, inactive, suspended
+  google.protobuf.Timestamp last_login_at = 6;   // Last login time
+  google.protobuf.Timestamp created_at = 7;      // Creation time
+  google.protobuf.Timestamp updated_at = 8;      // Update time
+}
+
+// Register request
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+}
+
+// Register response
+message RegisterResponse {
+  User user = 1;
+  string token = 2;  // JWT token
+}
+
+// Login request
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+// Login response
+message LoginResponse {
+  User user = 1;
+  string token = 2;  // JWT token
+}
+
+// Get profile request
+message GetProfileRequest {
+  // User ID is extracted from JWT token in context
+}
+
+// Update profile request
+message UpdateProfileRequest {
+  string username = 1;
+  string email = 2;
+}
+
+// Change password request
+message ChangePasswordRequest {
+  string old_password = 1;
+  string new_password = 2;
+}
+
+// User service definition
+service UserService {
+  // Register new user
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/register"
+      body: "*"
+    };
+  }
+
+  // Login
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login"
+      body: "*"
+    };
+  }
+
+  // Get current user profile
+  rpc GetProfile(GetProfileRequest) returns (User) {
+    option (google.api.http) = {
+      get: "/api/v1/users/profile"
+    };
+  }
+
+  // Update current user profile
+  rpc UpdateProfile(UpdateProfileRequest) returns (User) {
+    option (google.api.http) = {
+      put: "/api/v1/users/profile"
+      body: "*"
+    };
+  }
+
+  // Change password
+  rpc ChangePassword(ChangePasswordRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/v1/users/change-password"
+      body: "*"
+    };
+  }
+}
