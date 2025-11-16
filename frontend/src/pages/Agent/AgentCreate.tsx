@@ -1,9 +1,19 @@
 import { useState } from 'react'
-import { Form, Input, Select, Button, Card, message } from 'antd'
+import { Form, Input, Select, Button, Card, message, Space, Tag } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { agentService } from '@/services/agent'
 
 const { TextArea } = Input
+
+// 可用的 AI 模型列表
+const AI_MODELS = [
+  { label: 'DeepSeek V3 (推荐)', value: 'deepseek-ai/DeepSeek-V3', provider: 'SiliconFlow', icon: '🚀' },
+  { label: 'DeepSeek V3.1', value: 'deepseek-ai/DeepSeek-V3.1-Terminus', provider: 'SiliconFlow', icon: '🚀' },
+  { label: 'DeepSeek R1', value: 'deepseek-ai/DeepSeek-R1', provider: 'SiliconFlow', icon: '🧠' },
+  { label: 'GPT-4', value: 'gpt-4', provider: 'OpenAI', icon: '🤖' },
+  { label: 'GPT-4 Turbo', value: 'gpt-4-turbo-preview', provider: 'OpenAI', icon: '⚡' },
+  { label: 'GPT-3.5 Turbo', value: 'gpt-3.5-turbo', provider: 'OpenAI', icon: '💬' },
+]
 
 const AgentCreate = () => {
   const navigate = useNavigate()
@@ -13,7 +23,17 @@ const AgentCreate = () => {
   const handleSubmit = async (values: any) => {
     setLoading(true)
     try {
-      await agentService.createAgent(values)
+      // 将 model 字段转换为 model_config
+      const payload = {
+        ...values,
+        model_config: {
+          model: values.model || 'deepseek-ai/DeepSeek-V3',
+          temperature: 0.7,
+        },
+      }
+      delete payload.model
+
+      await agentService.createAgent(payload)
       message.success('创建成功')
       navigate('/agents')
     } catch (error) {
@@ -34,6 +54,7 @@ const AgentCreate = () => {
           initialValues={{
             type: 'single',
             status: 'draft',
+            model: 'deepseek-ai/DeepSeek-V3',
           }}
         >
           <Form.Item
@@ -49,6 +70,26 @@ const AgentCreate = () => {
             name="description"
           >
             <TextArea rows={4} placeholder="请输入描述" />
+          </Form.Item>
+
+          <Form.Item
+            label="AI 模型"
+            name="model"
+            rules={[{ required: true, message: '请选择 AI 模型' }]}
+          >
+            <Select placeholder="选择 AI 模型">
+              {AI_MODELS.map((model) => (
+                <Select.Option key={model.value} value={model.value}>
+                  <Space>
+                    <span>{model.icon}</span>
+                    <span>{model.label}</span>
+                    <Tag color={model.provider === 'SiliconFlow' ? 'green' : 'blue'} style={{ fontSize: 10 }}>
+                      {model.provider}
+                    </Tag>
+                  </Space>
+                </Select.Option>
+              ))}
+            </Select>
           </Form.Item>
 
           <Form.Item

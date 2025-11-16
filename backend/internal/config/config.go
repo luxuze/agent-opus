@@ -10,14 +10,15 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig
-	Postgres  PostgresConfig
-	Redis     RedisConfig
-	JWT       JWTConfig
-	OpenAI    OpenAIConfig
-	Embedding EmbeddingConfig
-	CORS      CORSConfig
-	Log       LogConfig
+	Server      ServerConfig
+	Postgres    PostgresConfig
+	Redis       RedisConfig
+	JWT         JWTConfig
+	OpenAI      OpenAIConfig
+	SiliconFlow SiliconFlowConfig
+	Embedding   EmbeddingConfig
+	CORS        CORSConfig
+	Log         LogConfig
 }
 
 type ServerConfig struct {
@@ -52,6 +53,12 @@ type JWTConfig struct {
 type OpenAIConfig struct {
 	APIKey  string
 	APIBase string
+}
+
+type SiliconFlowConfig struct {
+	APIKey  string
+	APIBase string
+	Model   string
 }
 
 type EmbeddingConfig struct {
@@ -107,6 +114,11 @@ func Load() *Config {
 		OpenAI: OpenAIConfig{
 			APIKey:  getEnv("OPENAI_API_KEY", ""),
 			APIBase: getEnv("OPENAI_API_BASE", "https://api.openai.com/v1"),
+		},
+		SiliconFlow: SiliconFlowConfig{
+			APIKey:  getEnv("SILICONFLOW_API_KEY", ""),
+			APIBase: getEnv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
+			Model:   getEnv("SILICONFLOW_MODEL", "deepseek-ai/DeepSeek-V3"),
 		},
 		Embedding: EmbeddingConfig{
 			Model:     getEnv("EMBEDDING_MODEL", "text-embedding-ada-002"),

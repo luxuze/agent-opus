@@ -9,10 +9,12 @@ import ConversationList from './pages/Conversation/ConversationList'
 import ConversationDetail from './pages/Conversation/ConversationDetail'
 import ToolList from './pages/Tool/ToolList'
 import KnowledgeBaseList from './pages/KnowledgeBase/KnowledgeBaseList'
+import Login from './pages/Login'
 
 function App() {
   return (
     <Routes>
+      <Route path="/login" element={<Login />} />
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />

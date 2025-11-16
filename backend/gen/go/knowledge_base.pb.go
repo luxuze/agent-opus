@@ -662,6 +662,205 @@ func (x *DeleteKnowledgeBaseResponse) GetId() string {
 	return ""
 }
 
+// 搜索知识库请求
+type SearchKnowledgeBaseRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	KnowledgeBaseId string                 `protobuf:"bytes,1,opt,name=knowledge_base_id,json=knowledgeBaseId,proto3" json:"knowledge_base_id,omitempty"`
+	Query           string                 `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
+	TopK            int32                  `protobuf:"varint,3,opt,name=top_k,json=topK,proto3" json:"top_k,omitempty"` // 返回结果数量，默认5
+	Threshold       float64                `protobuf:"fixed64,4,opt,name=threshold,proto3" json:"threshold,omitempty"`  // 相似度阈值，默认0.7
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SearchKnowledgeBaseRequest) Reset() {
+	*x = SearchKnowledgeBaseRequest{}
+	mi := &file_knowledge_base_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchKnowledgeBaseRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchKnowledgeBaseRequest) ProtoMessage() {}
+
+func (x *SearchKnowledgeBaseRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_base_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchKnowledgeBaseRequest.ProtoReflect.Descriptor instead.
+func (*SearchKnowledgeBaseRequest) Descriptor() ([]byte, []int) {
+	return file_knowledge_base_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SearchKnowledgeBaseRequest) GetKnowledgeBaseId() string {
+	if x != nil {
+		return x.KnowledgeBaseId
+	}
+	return ""
+}
+
+func (x *SearchKnowledgeBaseRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *SearchKnowledgeBaseRequest) GetTopK() int32 {
+	if x != nil {
+		return x.TopK
+	}
+	return 0
+}
+
+func (x *SearchKnowledgeBaseRequest) GetThreshold() float64 {
+	if x != nil {
+		return x.Threshold
+	}
+	return 0
+}
+
+// 搜索结果项
+type SearchResultItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChunkId       string                 `protobuf:"bytes,1,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
+	DocumentId    string                 `protobuf:"bytes,2,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
+	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
+	Score         float64                `protobuf:"fixed64,4,opt,name=score,proto3" json:"score,omitempty"` // 相似度分数
+	Metadata      *structpb.Struct       `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchResultItem) Reset() {
+	*x = SearchResultItem{}
+	mi := &file_knowledge_base_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchResultItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchResultItem) ProtoMessage() {}
+
+func (x *SearchResultItem) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_base_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchResultItem.ProtoReflect.Descriptor instead.
+func (*SearchResultItem) Descriptor() ([]byte, []int) {
+	return file_knowledge_base_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *SearchResultItem) GetChunkId() string {
+	if x != nil {
+		return x.ChunkId
+	}
+	return ""
+}
+
+func (x *SearchResultItem) GetDocumentId() string {
+	if x != nil {
+		return x.DocumentId
+	}
+	return ""
+}
+
+func (x *SearchResultItem) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *SearchResultItem) GetScore() float64 {
+	if x != nil {
+		return x.Score
+	}
+	return 0
+}
+
+func (x *SearchResultItem) GetMetadata() *structpb.Struct {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+// 搜索知识库响应
+type SearchKnowledgeBaseResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Results       []*SearchResultItem    `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Context       string                 `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"` // 合并后的上下文文本
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchKnowledgeBaseResponse) Reset() {
+	*x = SearchKnowledgeBaseResponse{}
+	mi := &file_knowledge_base_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchKnowledgeBaseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchKnowledgeBaseResponse) ProtoMessage() {}
+
+func (x *SearchKnowledgeBaseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_base_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchKnowledgeBaseResponse.ProtoReflect.Descriptor instead.
+func (*SearchKnowledgeBaseResponse) Descriptor() ([]byte, []int) {
+	return file_knowledge_base_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *SearchKnowledgeBaseResponse) GetResults() []*SearchResultItem {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+func (x *SearchKnowledgeBaseResponse) GetContext() string {
+	if x != nil {
+		return x.Context
+	}
+	return ""
+}
+
 var File_knowledge_base_proto protoreflect.FileDescriptor
 
 const file_knowledge_base_proto_rawDesc = "" +
@@ -719,13 +918,29 @@ const file_knowledge_base_proto_rawDesc = "" +
 	"\x1aDeleteKnowledgeBaseRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"-\n" +
 	"\x1bDeleteKnowledgeBaseResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id2\xdf\x04\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x91\x01\n" +
+	"\x1aSearchKnowledgeBaseRequest\x12*\n" +
+	"\x11knowledge_base_id\x18\x01 \x01(\tR\x0fknowledgeBaseId\x12\x14\n" +
+	"\x05query\x18\x02 \x01(\tR\x05query\x12\x13\n" +
+	"\x05top_k\x18\x03 \x01(\x05R\x04topK\x12\x1c\n" +
+	"\tthreshold\x18\x04 \x01(\x01R\tthreshold\"\xb3\x01\n" +
+	"\x10SearchResultItem\x12\x19\n" +
+	"\bchunk_id\x18\x01 \x01(\tR\achunkId\x12\x1f\n" +
+	"\vdocument_id\x18\x02 \x01(\tR\n" +
+	"documentId\x12\x18\n" +
+	"\acontent\x18\x03 \x01(\tR\acontent\x12\x14\n" +
+	"\x05score\x18\x04 \x01(\x01R\x05score\x123\n" +
+	"\bmetadata\x18\x05 \x01(\v2\x17.google.protobuf.StructR\bmetadata\"h\n" +
+	"\x1bSearchKnowledgeBaseResponse\x12/\n" +
+	"\aresults\x18\x01 \x03(\v2\x15.api.SearchResultItemR\aresults\x12\x18\n" +
+	"\acontext\x18\x02 \x01(\tR\acontext2\xf9\x05\n" +
 	"\x14KnowledgeBaseService\x12n\n" +
 	"\x13CreateKnowledgeBase\x12\x1f.api.CreateKnowledgeBaseRequest\x1a\x12.api.KnowledgeBase\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/v1/knowledge-bases\x12v\n" +
 	"\x12ListKnowledgeBases\x12\x1e.api.ListKnowledgeBasesRequest\x1a\x1f.api.ListKnowledgeBasesResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/v1/knowledge-bases\x12j\n" +
 	"\x10GetKnowledgeBase\x12\x1c.api.GetKnowledgeBaseRequest\x1a\x12.api.KnowledgeBase\"$\x82\xd3\xe4\x93\x02\x1e\x12\x1c/api/v1/knowledge-bases/{id}\x12}\n" +
 	"\x0eUploadDocument\x12\x1a.api.UploadDocumentRequest\x1a\r.api.Document\"@\x82\xd3\xe4\x93\x02::\x01*\"5/api/v1/knowledge-bases/{knowledge_base_id}/documents\x12t\n" +
-	"\x13DeleteKnowledgeBase\x12\x1f.api.DeleteKnowledgeBaseRequest\x1a\x16.google.protobuf.Empty\"$\x82\xd3\xe4\x93\x02\x1e*\x1c/api/v1/knowledge-bases/{id}B<Z:github.com/yourusername/agent-opus/backend/api/proto;protob\x06proto3"
+	"\x13DeleteKnowledgeBase\x12\x1f.api.DeleteKnowledgeBaseRequest\x1a\x16.google.protobuf.Empty\"$\x82\xd3\xe4\x93\x02\x1e*\x1c/api/v1/knowledge-bases/{id}\x12\x97\x01\n" +
+	"\x13SearchKnowledgeBase\x12\x1f.api.SearchKnowledgeBaseRequest\x1a .api.SearchKnowledgeBaseResponse\"=\x82\xd3\xe4\x93\x027:\x01*\"2/api/v1/knowledge-bases/{knowledge_base_id}/searchB<Z:github.com/yourusername/agent-opus/backend/api/proto;protob\x06proto3"
 
 var (
 	file_knowledge_base_proto_rawDescOnce sync.Once
@@ -739,7 +954,7 @@ func file_knowledge_base_proto_rawDescGZIP() []byte {
 	return file_knowledge_base_proto_rawDescData
 }
 
-var file_knowledge_base_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_knowledge_base_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_knowledge_base_proto_goTypes = []any{
 	(*Document)(nil),                    // 0: api.Document
 	(*KnowledgeBase)(nil),               // 1: api.KnowledgeBase
@@ -750,35 +965,42 @@ var file_knowledge_base_proto_goTypes = []any{
 	(*UploadDocumentRequest)(nil),       // 6: api.UploadDocumentRequest
 	(*DeleteKnowledgeBaseRequest)(nil),  // 7: api.DeleteKnowledgeBaseRequest
 	(*DeleteKnowledgeBaseResponse)(nil), // 8: api.DeleteKnowledgeBaseResponse
-	(*structpb.Struct)(nil),             // 9: google.protobuf.Struct
-	(*timestamppb.Timestamp)(nil),       // 10: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),               // 11: google.protobuf.Empty
+	(*SearchKnowledgeBaseRequest)(nil),  // 9: api.SearchKnowledgeBaseRequest
+	(*SearchResultItem)(nil),            // 10: api.SearchResultItem
+	(*SearchKnowledgeBaseResponse)(nil), // 11: api.SearchKnowledgeBaseResponse
+	(*structpb.Struct)(nil),             // 12: google.protobuf.Struct
+	(*timestamppb.Timestamp)(nil),       // 13: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),               // 14: google.protobuf.Empty
 }
 var file_knowledge_base_proto_depIdxs = []int32{
-	9,  // 0: api.Document.metadata:type_name -> google.protobuf.Struct
-	10, // 1: api.Document.created_at:type_name -> google.protobuf.Timestamp
-	10, // 2: api.Document.updated_at:type_name -> google.protobuf.Timestamp
-	9,  // 3: api.KnowledgeBase.chunk_config:type_name -> google.protobuf.Struct
-	10, // 4: api.KnowledgeBase.created_at:type_name -> google.protobuf.Timestamp
-	10, // 5: api.KnowledgeBase.updated_at:type_name -> google.protobuf.Timestamp
-	9,  // 6: api.CreateKnowledgeBaseRequest.chunk_config:type_name -> google.protobuf.Struct
+	12, // 0: api.Document.metadata:type_name -> google.protobuf.Struct
+	13, // 1: api.Document.created_at:type_name -> google.protobuf.Timestamp
+	13, // 2: api.Document.updated_at:type_name -> google.protobuf.Timestamp
+	12, // 3: api.KnowledgeBase.chunk_config:type_name -> google.protobuf.Struct
+	13, // 4: api.KnowledgeBase.created_at:type_name -> google.protobuf.Timestamp
+	13, // 5: api.KnowledgeBase.updated_at:type_name -> google.protobuf.Timestamp
+	12, // 6: api.CreateKnowledgeBaseRequest.chunk_config:type_name -> google.protobuf.Struct
 	1,  // 7: api.ListKnowledgeBasesResponse.items:type_name -> api.KnowledgeBase
-	9,  // 8: api.UploadDocumentRequest.metadata:type_name -> google.protobuf.Struct
-	2,  // 9: api.KnowledgeBaseService.CreateKnowledgeBase:input_type -> api.CreateKnowledgeBaseRequest
-	3,  // 10: api.KnowledgeBaseService.ListKnowledgeBases:input_type -> api.ListKnowledgeBasesRequest
-	5,  // 11: api.KnowledgeBaseService.GetKnowledgeBase:input_type -> api.GetKnowledgeBaseRequest
-	6,  // 12: api.KnowledgeBaseService.UploadDocument:input_type -> api.UploadDocumentRequest
-	7,  // 13: api.KnowledgeBaseService.DeleteKnowledgeBase:input_type -> api.DeleteKnowledgeBaseRequest
-	1,  // 14: api.KnowledgeBaseService.CreateKnowledgeBase:output_type -> api.KnowledgeBase
-	4,  // 15: api.KnowledgeBaseService.ListKnowledgeBases:output_type -> api.ListKnowledgeBasesResponse
-	1,  // 16: api.KnowledgeBaseService.GetKnowledgeBase:output_type -> api.KnowledgeBase
-	0,  // 17: api.KnowledgeBaseService.UploadDocument:output_type -> api.Document
-	11, // 18: api.KnowledgeBaseService.DeleteKnowledgeBase:output_type -> google.protobuf.Empty
-	14, // [14:19] is the sub-list for method output_type
-	9,  // [9:14] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	12, // 8: api.UploadDocumentRequest.metadata:type_name -> google.protobuf.Struct
+	12, // 9: api.SearchResultItem.metadata:type_name -> google.protobuf.Struct
+	10, // 10: api.SearchKnowledgeBaseResponse.results:type_name -> api.SearchResultItem
+	2,  // 11: api.KnowledgeBaseService.CreateKnowledgeBase:input_type -> api.CreateKnowledgeBaseRequest
+	3,  // 12: api.KnowledgeBaseService.ListKnowledgeBases:input_type -> api.ListKnowledgeBasesRequest
+	5,  // 13: api.KnowledgeBaseService.GetKnowledgeBase:input_type -> api.GetKnowledgeBaseRequest
+	6,  // 14: api.KnowledgeBaseService.UploadDocument:input_type -> api.UploadDocumentRequest
+	7,  // 15: api.KnowledgeBaseService.DeleteKnowledgeBase:input_type -> api.DeleteKnowledgeBaseRequest
+	9,  // 16: api.KnowledgeBaseService.SearchKnowledgeBase:input_type -> api.SearchKnowledgeBaseRequest
+	1,  // 17: api.KnowledgeBaseService.CreateKnowledgeBase:output_type -> api.KnowledgeBase
+	4,  // 18: api.KnowledgeBaseService.ListKnowledgeBases:output_type -> api.ListKnowledgeBasesResponse
+	1,  // 19: api.KnowledgeBaseService.GetKnowledgeBase:output_type -> api.KnowledgeBase
+	0,  // 20: api.KnowledgeBaseService.UploadDocument:output_type -> api.Document
+	14, // 21: api.KnowledgeBaseService.DeleteKnowledgeBase:output_type -> google.protobuf.Empty
+	11, // 22: api.KnowledgeBaseService.SearchKnowledgeBase:output_type -> api.SearchKnowledgeBaseResponse
+	17, // [17:23] is the sub-list for method output_type
+	11, // [11:17] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_knowledge_base_proto_init() }
@@ -793,7 +1015,7 @@ func file_knowledge_base_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_knowledge_base_proto_rawDesc), len(file_knowledge_base_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

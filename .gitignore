@@ -1,4 +1,5 @@
-# Backend
+# Environment files
+.env
 backend/.env
 backend/logs
 backend/tmp

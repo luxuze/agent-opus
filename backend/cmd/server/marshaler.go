@@ -7,6 +7,7 @@ import (
 	"agent-platform/internal/response"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // CustomMarshaler 自定义的 Marshaler，将响应包装为统一格式 {code, message, data}
@@ -17,7 +18,15 @@ type CustomMarshaler struct {
 // NewCustomMarshaler 创建自定义 Marshaler
 func NewCustomMarshaler() *CustomMarshaler {
 	return &CustomMarshaler{
-		JSONPb: &runtime.JSONPb{},
+		JSONPb: &runtime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{
+				UseProtoNames:   true, // 使用 proto 原始字段名 (snake_case)
+				EmitUnpopulated: true, // 输出零值字段
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true, // 忽略未知字段
+			},
+		},
 	}
 }
 

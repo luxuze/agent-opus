@@ -84,6 +84,29 @@ message DeleteKnowledgeBaseResponse {
   string id = 1;
 }
 
+// 搜索知识库请求
+message SearchKnowledgeBaseRequest {
+  string knowledge_base_id = 1;
+  string query = 2;
+  int32 top_k = 3;                        // 返回结果数量，默认5
+  double threshold = 4;                   // 相似度阈值，默认0.7
+}
+
+// 搜索结果项
+message SearchResultItem {
+  string chunk_id = 1;
+  string document_id = 2;
+  string content = 3;
+  double score = 4;                       // 相似度分数
+  google.protobuf.Struct metadata = 5;
+}
+
+// 搜索知识库响应
+message SearchKnowledgeBaseResponse {
+  repeated SearchResultItem results = 1;
+  string context = 2;                     // 合并后的上下文文本
+}
+
 // KnowledgeBase 服务定义
 service KnowledgeBaseService {
   // 创建知识库
@@ -120,6 +143,14 @@ service KnowledgeBaseService {
   rpc DeleteKnowledgeBase(DeleteKnowledgeBaseRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       delete: "/api/v1/knowledge-bases/{id}"
+    };
+  }
+
+  // 搜索知识库
+  rpc SearchKnowledgeBase(SearchKnowledgeBaseRequest) returns (SearchKnowledgeBaseResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/knowledge-bases/{knowledge_base_id}/search"
+      body: "*"
     };
   }
 }

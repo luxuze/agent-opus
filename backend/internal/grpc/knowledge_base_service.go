@@ -145,3 +145,54 @@ func (s *KnowledgeBaseServer) DeleteKnowledgeBase(ctx context.Context, req *pb.D
 
 	return &emptypb.Empty{}, nil
 }
+
+// SearchKnowledgeBase 搜索知识库
+func (s *KnowledgeBaseServer) SearchKnowledgeBase(ctx context.Context, req *pb.SearchKnowledgeBaseRequest) (*pb.SearchKnowledgeBaseResponse, error) {
+	if req.KnowledgeBaseId == "" {
+		return nil, status.Error(codes.InvalidArgument, "knowledge_base_id is required")
+	}
+	if req.Query == "" {
+		return nil, status.Error(codes.InvalidArgument, "query is required")
+	}
+
+	// 设置默认值
+	topK := req.TopK
+	if topK <= 0 {
+		topK = 5
+	}
+	threshold := req.Threshold
+	if threshold <= 0 {
+		threshold = 0.7
+	}
+
+	// 调用知识库管理器进行搜索
+	results, err := s.kbMgr.Search(req.KnowledgeBaseId, req.Query, int(topK), threshold)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to search knowledge base: %v", err)
+	}
+
+	// 转换搜索结果为 protobuf
+	pbResults := make([]*pb.SearchResultItem, len(results))
+	for i, result := range results {
+		metadata, _ := structpb.NewStruct(result.Chunk.Metadata)
+		pbResults[i] = &pb.SearchResultItem{
+			ChunkId:    result.Chunk.ID,
+			DocumentId: result.DocumentID,
+			Content:    result.Chunk.Content,
+			Score:      result.Score,
+			Metadata:   metadata,
+		}
+	}
+
+	// 获取合并后的上下文文本
+	context, err := s.kbMgr.GetRelevantContext(req.KnowledgeBaseId, req.Query, int(topK))
+	if err != nil {
+		// 如果获取上下文失败，仍然返回搜索结果
+		context = ""
+	}
+
+	return &pb.SearchKnowledgeBaseResponse{
+		Results: pbResults,
+		Context: context,
+	}, nil
+}

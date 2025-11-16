@@ -85,10 +85,11 @@ func main() {
 	)
 
 	// Register services with database client, AI manager, and KB manager
+	kbServer := grpcserver.NewKnowledgeBaseServer(dbClient.Client, kbManager)
 	pb.RegisterAgentServiceServer(grpcServer, grpcserver.NewAgentServer(dbClient.Client))
-	pb.RegisterConversationServiceServer(grpcServer, grpcserver.NewConversationServer(dbClient.Client, aiManager))
+	pb.RegisterConversationServiceServer(grpcServer, grpcserver.NewConversationServer(dbClient.Client, aiManager, kbServer))
 	pb.RegisterToolServiceServer(grpcServer, grpcserver.NewToolServer(dbClient.Client))
-	pb.RegisterKnowledgeBaseServiceServer(grpcServer, grpcserver.NewKnowledgeBaseServer(dbClient.Client, kbManager))
+	pb.RegisterKnowledgeBaseServiceServer(grpcServer, kbServer)
 	pb.RegisterUserServiceServer(grpcServer, grpcserver.NewUserServer(dbClient.Client, jwtService))
 
 	// Register reflection service (for grpcurl and other tools)

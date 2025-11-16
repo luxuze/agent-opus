@@ -22,15 +22,17 @@ type ConversationServer struct {
 	aiManager   *ai.Manager
 	convRepo    *repository.ConversationRepository
 	agentRepo   *repository.AgentRepository
+	kbServer    *KnowledgeBaseServer
 }
 
 // NewConversationServer 创建 Conversation 服务实例
-func NewConversationServer(client *ent.Client, aiManager *ai.Manager) *ConversationServer {
+func NewConversationServer(client *ent.Client, aiManager *ai.Manager, kbServer *KnowledgeBaseServer) *ConversationServer {
 	return &ConversationServer{
 		client:    client,
 		aiManager: aiManager,
 		convRepo:  repository.NewConversationRepository(client),
 		agentRepo: repository.NewAgentRepository(client),
+		kbServer:  kbServer,
 	}
 }
 
@@ -83,56 +85,46 @@ func (s *ConversationServer) GetConversation(ctx context.Context, req *pb.GetCon
 		return nil, status.Error(codes.InvalidArgument, "id is required")
 	}
 
-	now := timestamppb.New(time.Now())
-	conversation := &pb.Conversation{
-		Id:      req.Id,
-		AgentId: "agent-001",
-		UserId:  "user-001",
-		Title:   "Sample Conversation",
-		Messages: []*pb.Message{
-			{
-				Id:        "msg-001",
-				Role:      "user",
-				Content:   "Hello!",
-				Timestamp: timestamppb.New(time.Now().Add(-10 * time.Minute)),
-			},
-			{
-				Id:        "msg-002",
-				Role:      "assistant",
-				Content:   "Hi! How can I help you today?",
-				Timestamp: timestamppb.New(time.Now().Add(-9 * time.Minute)),
-			},
-		},
-		Status:        "active",
-		CreatedAt:     timestamppb.New(time.Now().Add(-1 * time.Hour)),
-		UpdatedAt:     now,
-		LastMessageAt: timestamppb.New(time.Now().Add(-9 * time.Minute)),
+	// Get conversation from database
+	conv, err := s.convRepo.Get(ctx, req.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "conversation not found: %v", err)
 	}
 
-	return conversation, nil
+	// Convert to protobuf
+	return entConversationToProto(conv), nil
 }
 
 // ListConversations 获取对话列表
 func (s *ConversationServer) ListConversations(ctx context.Context, req *pb.ListConversationsRequest) (*pb.ListConversationsResponse, error) {
-	now := timestamppb.New(time.Now())
-	conversations := []*pb.Conversation{
-		{
-			Id:            uuid.New().String(),
-			AgentId:       req.AgentId,
-			UserId:        "user-001",
-			Title:         "Conversation 1",
-			Status:        "active",
-			CreatedAt:     now,
-			UpdatedAt:     now,
-			LastMessageAt: now,
-		},
+	// Set default pagination
+	page := req.Page
+	if page <= 0 {
+		page = 1
+	}
+	pageSize := req.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+
+	// List conversations from database
+	// Note: proto only has agent_id, so we pass empty strings for user_id and status
+	conversations, total, err := s.convRepo.List(ctx, page, pageSize, req.AgentId, "", "")
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list conversations: %v", err)
+	}
+
+	// Convert to protobuf
+	items := make([]*pb.Conversation, len(conversations))
+	for i, conv := range conversations {
+		items[i] = entConversationToProto(conv)
 	}
 
 	return &pb.ListConversationsResponse{
-		Items:    conversations,
-		Page:     req.Page,
-		PageSize: req.PageSize,
-		Total:    1,
+		Items:    items,
+		Page:     page,
+		PageSize: pageSize,
+		Total:    int64(total),
 	}, nil
 }
 
@@ -169,11 +161,50 @@ func (s *ConversationServer) SendMessage(ctx context.Context, req *pb.SendMessag
 	// Build message history for AI
 	messages := []ai.Message{}
 
-	// Add system prompt if agent has one
+	// Add system prompt with knowledge base context if agent has one
+	systemPrompt := ""
 	if agent.PromptTemplate != "" {
+		systemPrompt = agent.PromptTemplate
+	}
+
+	// Retrieve knowledge base context if agent has knowledge bases configured
+	if len(agent.KnowledgeBases) > 0 && s.kbServer != nil {
+		kbContexts := []string{}
+		for _, kbID := range agent.KnowledgeBases {
+			// Search each knowledge base
+			searchResp, err := s.kbServer.SearchKnowledgeBase(ctx, &pb.SearchKnowledgeBaseRequest{
+				KnowledgeBaseId: kbID,
+				Query:           req.Content,
+				TopK:            3,
+				Threshold:       0.7,
+			})
+			if err == nil && searchResp.Context != "" {
+				kbContexts = append(kbContexts, searchResp.Context)
+			}
+		}
+
+		// Append knowledge base context to system prompt
+		if len(kbContexts) > 0 {
+			kbContext := "\n\n=== Knowledge Base Context ===\n"
+			for i, ctx := range kbContexts {
+				kbContext += "\n[Knowledge Base " + agent.KnowledgeBases[i] + "]:\n" + ctx
+			}
+			kbContext += "\n=== End of Knowledge Base Context ===\n\n"
+			kbContext += "Please use the above knowledge base information to answer the user's question accurately. If the knowledge base contains relevant information, prioritize it in your response."
+
+			if systemPrompt != "" {
+				systemPrompt = systemPrompt + kbContext
+			} else {
+				systemPrompt = kbContext
+			}
+		}
+	}
+
+	// Add system prompt to messages
+	if systemPrompt != "" {
 		messages = append(messages, ai.Message{
 			Role:    "system",
-			Content: agent.PromptTemplate,
+			Content: systemPrompt,
 		})
 	}
 
@@ -200,7 +231,7 @@ func (s *ConversationServer) SendMessage(ctx context.Context, req *pb.SendMessag
 	})
 
 	// Get model config from agent
-	model := "gpt-4o"
+	model := "deepseek-ai/DeepSeek-V3" // Default to DeepSeek (更经济实惠)
 	temperature := float32(0.7)
 	if agent.ModelConfig != nil {
 		if m, ok := agent.ModelConfig["model"].(string); ok && m != "" {
