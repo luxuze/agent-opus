@@ -10,15 +10,13 @@ import (
 )
 
 type Config struct {
-	Server      ServerConfig
-	Postgres    PostgresConfig
-	Redis       RedisConfig
-	JWT         JWTConfig
-	OpenAI      OpenAIConfig
-	SiliconFlow SiliconFlowConfig
-	Embedding   EmbeddingConfig
-	CORS        CORSConfig
-	Log         LogConfig
+	Server   ServerConfig
+	Postgres PostgresConfig
+	Redis    RedisConfig
+	JWT      JWTConfig
+	AI       AIConfig
+	CORS     CORSConfig
+	Log      LogConfig
 }
 
 type ServerConfig struct {
@@ -50,20 +48,23 @@ type JWTConfig struct {
 	ExpireHours int
 }
 
-type OpenAIConfig struct {
-	APIKey  string
-	APIBase string
+// AIProviderConfig represents configuration for a single AI provider
+type AIProviderConfig struct {
+	Name         string   // Provider name (e.g., "openai", "siliconflow", "anthropic")
+	APIKey       string   // API key
+	APIBase      string   // Base URL for API
+	DefaultModel string   // Default model to use
+	Models       []string // Supported models
+	Enabled      bool     // Whether this provider is enabled
 }
 
-type SiliconFlowConfig struct {
-	APIKey  string
-	APIBase string
-	Model   string
-}
-
-type EmbeddingConfig struct {
-	Model     string
-	Dimension int
+// AIConfig contains configuration for all AI providers
+type AIConfig struct {
+	Providers          map[string]*AIProviderConfig // Map of provider name to config
+	DefaultProvider    string                       // Default provider to use
+	EmbeddingModel     string                       // Model to use for embeddings
+	EmbeddingDimension int                          // Dimension of embeddings
+	EmbeddingProvider  string                       // Provider to use for embeddings
 }
 
 type CORSConfig struct {
@@ -84,6 +85,9 @@ func Load() *Config {
 	redisDB, _ := strconv.Atoi(getEnv("REDIS_DB", "0"))
 	jwtExpireHours, _ := strconv.Atoi(getEnv("JWT_EXPIRE_HOURS", "24"))
 	embeddingDim, _ := strconv.Atoi(getEnv("EMBEDDING_DIMENSION", "1536"))
+
+	// Load AI configuration
+	aiConfig := loadAIConfig(embeddingDim)
 
 	return &Config{
 		Server: ServerConfig{
@@ -111,19 +115,7 @@ func Load() *Config {
 			Secret:      getEnv("JWT_SECRET", "your-secret-key"),
 			ExpireHours: jwtExpireHours,
 		},
-		OpenAI: OpenAIConfig{
-			APIKey:  getEnv("OPENAI_API_KEY", ""),
-			APIBase: getEnv("OPENAI_API_BASE", "https://api.openai.com/v1"),
-		},
-		SiliconFlow: SiliconFlowConfig{
-			APIKey:  getEnv("SILICONFLOW_API_KEY", ""),
-			APIBase: getEnv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
-			Model:   getEnv("SILICONFLOW_MODEL", "deepseek-ai/DeepSeek-V3"),
-		},
-		Embedding: EmbeddingConfig{
-			Model:     getEnv("EMBEDDING_MODEL", "text-embedding-ada-002"),
-			Dimension: embeddingDim,
-		},
+		AI: aiConfig,
 		CORS: CORSConfig{
 			Origins: strings.Split(getEnv("CORS_ORIGINS", "http://localhost:5173"), ","),
 		},
@@ -131,6 +123,74 @@ func Load() *Config {
 			Level: getEnv("LOG_LEVEL", "info"),
 			File:  getEnv("LOG_FILE", "logs/app.log"),
 		},
+	}
+}
+
+// loadAIConfig loads AI provider configurations from environment variables
+func loadAIConfig(embeddingDim int) AIConfig {
+	providers := make(map[string]*AIProviderConfig)
+
+	// Load OpenAI configuration
+	openaiKey := getEnv("OPENAI_API_KEY", "")
+	if openaiKey != "" && openaiKey != "your-openai-api-key" {
+		providers["openai"] = &AIProviderConfig{
+			Name:         "openai",
+			APIKey:       openaiKey,
+			APIBase:      getEnv("OPENAI_API_BASE", "https://api.openai.com/v1"),
+			DefaultModel: getEnv("OPENAI_DEFAULT_MODEL", "gpt-4o"),
+			Models:       strings.Split(getEnv("OPENAI_MODELS", "gpt-4o,gpt-4,gpt-3.5-turbo"), ","),
+			Enabled:      true,
+		}
+		log.Printf("OpenAI provider configured with key: %s...", openaiKey[:min(10, len(openaiKey))])
+	} else {
+		log.Printf("OpenAI provider not configured (key: %q)", openaiKey)
+	}
+
+	// Load SiliconFlow (DeepSeek) configuration
+	siliconflowKey := getEnv("SILICONFLOW_API_KEY", "")
+	if siliconflowKey != "" && siliconflowKey != "your-siliconflow-api-key" {
+		providers["siliconflow"] = &AIProviderConfig{
+			Name:         "siliconflow",
+			APIKey:       siliconflowKey,
+			APIBase:      getEnv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
+			DefaultModel: getEnv("SILICONFLOW_DEFAULT_MODEL", "deepseek-ai/DeepSeek-V3"),
+			Models:       strings.Split(getEnv("SILICONFLOW_MODELS", "deepseek-ai/DeepSeek-V3,deepseek-chat"), ","),
+			Enabled:      true,
+		}
+	}
+
+	// Load Anthropic configuration
+	anthropicKey := getEnv("ANTHROPIC_API_KEY", "")
+	if anthropicKey != "" && anthropicKey != "your-anthropic-api-key" {
+		providers["anthropic"] = &AIProviderConfig{
+			Name:         "anthropic",
+			APIKey:       anthropicKey,
+			APIBase:      getEnv("ANTHROPIC_API_BASE", "https://api.anthropic.com"),
+			DefaultModel: getEnv("ANTHROPIC_DEFAULT_MODEL", "claude-3-5-sonnet-20241022"),
+			Models:       strings.Split(getEnv("ANTHROPIC_MODELS", "claude-3-5-sonnet-20241022,claude-3-opus-20240229,claude-3-haiku-20240307"), ","),
+			Enabled:      true,
+		}
+	}
+
+	// Determine default provider
+	defaultProvider := getEnv("AI_DEFAULT_PROVIDER", "")
+	if defaultProvider == "" {
+		// Auto-detect default provider based on what's configured
+		if _, ok := providers["openai"]; ok {
+			defaultProvider = "openai"
+		} else if _, ok := providers["siliconflow"]; ok {
+			defaultProvider = "siliconflow"
+		} else if _, ok := providers["anthropic"]; ok {
+			defaultProvider = "anthropic"
+		}
+	}
+
+	return AIConfig{
+		Providers:          providers,
+		DefaultProvider:    defaultProvider,
+		EmbeddingModel:     getEnv("EMBEDDING_MODEL", "text-embedding-ada-002"),
+		EmbeddingDimension: embeddingDim,
+		EmbeddingProvider:  getEnv("EMBEDDING_PROVIDER", "openai"),
 	}
 }
 

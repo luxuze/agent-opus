@@ -16,8 +16,18 @@ type EmbeddingService struct {
 }
 
 // NewEmbeddingService creates a new embedding service
-func NewEmbeddingService(apiKey, model string, logger *zap.Logger) *EmbeddingService {
-	client := openai.NewClient(apiKey)
+func NewEmbeddingService(apiKey, apiBase, model string, logger *zap.Logger) *EmbeddingService {
+	var client *openai.Client
+
+	if apiBase != "" && apiBase != "https://api.openai.com/v1" {
+		// Use custom base URL
+		config := openai.DefaultConfig(apiKey)
+		config.BaseURL = apiBase
+		client = openai.NewClientWithConfig(config)
+	} else {
+		// Use default OpenAI client
+		client = openai.NewClient(apiKey)
+	}
 
 	embModel := openai.EmbeddingModel(model)
 	if model == "" {

@@ -20,15 +20,18 @@ type Manager struct {
 }
 
 // NewManager creates a new knowledge base manager
-func NewManager(client *ent.Client, dsn, apiKey, embeddingModel string, logger *zap.Logger) (*Manager, error) {
+func NewManager(client *ent.Client, dsn, apiKey, apiBase, embeddingModel string, logger *zap.Logger) (*Manager, error) {
 	chunker := NewChunker(DefaultChunkConfig())
 
 	var embedder *EmbeddingService
 	if apiKey != "" && apiKey != "your-openai-api-key" {
-		embedder = NewEmbeddingService(apiKey, embeddingModel, logger)
-		logger.Info("Embedding service initialized", zap.String("model", embeddingModel))
+		embedder = NewEmbeddingService(apiKey, apiBase, embeddingModel, logger)
+		logger.Info("Embedding service initialized",
+			zap.String("model", embeddingModel),
+			zap.String("api_base", apiBase),
+		)
 	} else {
-		logger.Warn("OpenAI API key not configured, embedding features will be limited")
+		logger.Warn("Embedding API key not configured, embedding features will be limited")
 	}
 
 	// Use PostgreSQL with pgvector for vector storage

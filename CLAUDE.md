@@ -11,7 +11,7 @@ Agent Platform 是一个智能代理管理和编排系统，采用前后端分�
 - 后端：Go + gRPC + HTTP Gateway (grpc-gateway)
 - 前端：React 18 + TypeScript + Vite + Ant Design
 - 数据库：PostgreSQL (主库 + pgvector 向量扩展)、Redis (缓存)
-- AI：OpenAI API、SiliconFlow DeepSeek API
+- AI：统一配置体系支持多个提供商（OpenAI、SiliconFlow、Anthropic 等）
 
 **核心功能**
 
@@ -397,32 +397,69 @@ proxy: {
 
 ### AI 模型配置说明
 
-系统支持多个 AI 服务提供商，可以同时配置或仅配置其中一个：
+系统采用**统一配置体系**，支持多个 AI 服务提供商，可以同时配置多个或仅配置其中一个。系统会根据模型名称自动路由到对应的提供商。
 
-**1. OpenAI（默认）**
+#### 支持的 AI 提供商
+
+**1. OpenAI**
 ```bash
 OPENAI_API_KEY=sk-xxx
 OPENAI_API_BASE=https://api.openai.com/v1
+OPENAI_DEFAULT_MODEL=gpt-4o
+OPENAI_MODELS=gpt-4o,gpt-4,gpt-3.5-turbo
 ```
 
-**2. SiliconFlow DeepSeek（推荐 - 性价比高）**
+**2. SiliconFlow（DeepSeek 等模型 - 推荐性价比高）**
 ```bash
 SILICONFLOW_API_KEY=sk-xxx
 SILICONFLOW_API_BASE=https://api.siliconflow.cn/v1
-SILICONFLOW_MODEL=deepseek-ai/DeepSeek-V3
+SILICONFLOW_DEFAULT_MODEL=deepseek-ai/DeepSeek-V3
+SILICONFLOW_MODELS=deepseek-ai/DeepSeek-V3,deepseek-chat
 ```
 
-**模型路由规则**：
-- 模型名包含 `deepseek` → 使用 SiliconFlow DeepSeek
-- 其他模型（`gpt-4`、`gpt-3.5-turbo` 等）→ 使用 OpenAI
-- 如果只配置了一个服务，自动使用该服务作为备选
+**3. Anthropic（Claude 模型）**
+```bash
+ANTHROPIC_API_KEY=sk-xxx
+ANTHROPIC_API_BASE=https://api.anthropic.com
+ANTHROPIC_DEFAULT_MODEL=claude-3-5-sonnet-20241022
+ANTHROPIC_MODELS=claude-3-5-sonnet-20241022,claude-3-opus-20240229
+```
 
-**获取 SiliconFlow API Key**：
+#### 全局配置
+
+```bash
+# 设置默认使用的 AI 提供商
+AI_DEFAULT_PROVIDER=openai
+
+# Embedding 配置
+EMBEDDING_PROVIDER=openai
+EMBEDDING_MODEL=text-embedding-ada-002
+EMBEDDING_DIMENSION=1536
+```
+
+#### 智能路由规则
+
+系统会根据请求的模型名称自动选择对应的提供商：
+
+- 模型名包含 `gpt` 或 `text-` → 使用 OpenAI
+- 模型名包含 `deepseek` → 使用 SiliconFlow
+- 模型名包含 `claude` → 使用 Anthropic
+- 模型名匹配配置的 `XXX_MODELS` 列表 → 使用对应提供商
+- 未匹配或未指定模型 → 使用 `AI_DEFAULT_PROVIDER` 配置的默认提供商
+- 如果只配置了一个提供商，自动使用该提供商作为备选
+
+#### 获取 API Key
+
+**SiliconFlow**：
 1. 访问 https://siliconflow.cn
 2. 注册账号并登录
 3. 前往控制台 → API Keys
 4. 创建新的 API Key
 5. 复制到 `.env` 文件的 `SILICONFLOW_API_KEY`
+
+**OpenAI**：访问 https://platform.openai.com/api-keys
+
+**Anthropic**：访问 https://console.anthropic.com/settings/keys
 
 ---
 

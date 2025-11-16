@@ -59,7 +59,36 @@ func main() {
 	}
 
 	// Initialize Knowledge Base manager with pgvector
-	kbManager, err := knowledge.NewManager(dbClient.Client, cfg.Postgres.DSN(), cfg.OpenAI.APIKey, cfg.Embedding.Model, logger)
+	// Get embedding provider configuration
+	embeddingProvider := cfg.AI.EmbeddingProvider
+	if embeddingProvider == "" {
+		embeddingProvider = "openai" // default
+	}
+
+	var embeddingAPIKey, embeddingAPIBase string
+	if providerCfg, ok := cfg.AI.Providers[embeddingProvider]; ok {
+		embeddingAPIKey = providerCfg.APIKey
+		embeddingAPIBase = providerCfg.APIBase
+	} else {
+		logger.Warn("Embedding provider not configured, using first available AI provider",
+			zap.String("requested_provider", embeddingProvider),
+		)
+		// Fallback to first available provider
+		for _, providerCfg := range cfg.AI.Providers {
+			embeddingAPIKey = providerCfg.APIKey
+			embeddingAPIBase = providerCfg.APIBase
+			break
+		}
+	}
+
+	kbManager, err := knowledge.NewManager(
+		dbClient.Client,
+		cfg.Postgres.DSN(),
+		embeddingAPIKey,
+		embeddingAPIBase,
+		cfg.AI.EmbeddingModel,
+		logger,
+	)
 	if err != nil {
 		logger.Fatal("Failed to initialize KB manager", zap.Error(err))
 	}
